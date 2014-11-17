@@ -7,3 +7,6 @@ venv/
 #vim swap files
 *.swp
 *.swo
+
+#folder with historic files
+_history/

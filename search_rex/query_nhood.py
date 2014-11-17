@@ -1,7 +1,7 @@
 class QueryNeighbourhood(object):
     '''Computes the neighbourhood of a target query'''
 
-    def get_neighbourhood(query_string):
+    def get_neighbourhood(self, query_string):
         '''Retrieves a list of queries that belong to the neighbourhood of
         the given query'''
         raise NotImplementedError()

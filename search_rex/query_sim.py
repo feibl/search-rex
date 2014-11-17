@@ -20,7 +20,7 @@ def jaccard_sim(X, Y):
 class QuerySimilarity(object):
     '''Computes the similarity between two queries'''
 
-    def compute_similarity(query_string1, query_string2):
+    def compute_similarity(self, query_string1, query_string2):
         raise NotImplementedError()
 
 

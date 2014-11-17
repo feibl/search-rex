@@ -27,22 +27,22 @@ class SearchResultRecommender(object):
     '''Recommender System for search results based on queries committed by
     members of a community'''
 
-    def recommend(query_string, n=None):
+    def recommend(self, query_string, n=None):
         '''Returns a list of n records that were relevant to the members of the
         community when committing the same or a similar query'''
-        pass
+        raise NotImplementedError()
 
     def register_hit(
-            query_string, record_id, t_stamp,
+            self, query_string, record_id, t_stamp,
             session_id):
         '''Stores a click on a search result recorded during the given
         session'''
-        pass
+        raise NotImplementedError()
 
-    def get_similar_queries(query_string, community_id=None):
+    def get_similar_queries(self, query_string):
         '''Gets similar queries that were committed by the given community
         '''
-        pass
+        raise NotImplementedError()
 
 
 class GenericSearchResultRecommender(SearchResultRecommender):
@@ -61,3 +61,6 @@ class GenericSearchResultRecommender(SearchResultRecommender):
         return self.data_model.register_hit(
             query_string=query_string, record_id=record_id,
             t_stamp=t_stamp, session_id=session_id)
+
+    def get_similar_queries(self, query_string):
+        return self.query_nhood.get_neighbourhood(query_string)

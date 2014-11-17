@@ -59,6 +59,12 @@ def similar_queries():
     community_id = args['community_id']
     query_string = args['query_string']
 
+    if community_id not in rec_systems:
+        return 'No Community called: {}'.format(community_id)
+    rec = rec_systems[community_id]
+    similar_queries = rec.get_similar_queries(query_string)
+    return similar_queries
+
 
 sreq_arg_parser = reqparse.RequestParser()
 sreq_arg_parser.add_argument('api_key', type=str, required=True)

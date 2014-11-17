@@ -15,18 +15,18 @@ class DataModel(object):
     by the different communities as well as the records'''
 
     def register_hit(
-            query_string, record_id, t_stamp, session_id):
+            self, query_string, record_id, t_stamp, session_id):
         '''Stores a click on a search result recorded during the given
         session'''
-        pass
+        raise NotImplementedError()
 
-    def get_hits_for_query(query_string):
+    def get_hits_for_query(self, query_string):
         '''Retrieves the hit row of the given query'''
-        pass
+        raise NotImplementedError()
 
-    def get_queries():
+    def get_queries(self):
         '''Gets an iterator over all the committed queries'''
-        pass
+        raise NotImplementedError()
 
 
 class PersistentDataModel(DataModel):
@@ -76,11 +76,3 @@ class PersistentDataModel(DataModel):
 
         session.commit()
         return True
-
-    def get_hits_for_query(query_string):
-        '''Retrieves the hit row of the given query'''
-        pass
-
-    def get_queries():
-        '''Gets an iterator over all the committed queries'''
-        pass

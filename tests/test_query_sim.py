@@ -1,4 +1,5 @@
 from search_rex.query_sim import jaccard_sim, shingle
+from search_rex.query_sim import StringJaccardSimilarity
 
 
 def test__shingle():
@@ -18,3 +19,12 @@ def test__jaccard_sim():
     set2 = [1, 4, 5]
 
     assert jaccard_sim(set1, set2) == 0.4
+
+
+def test__string_jaccard_sim():
+    string1 = 'hello'
+    string2 = 'yellow'
+
+    sut = StringJaccardSimilarity(k_shingles=3)
+
+    assert sut.compute_similarity(string1, string2) == 0.4

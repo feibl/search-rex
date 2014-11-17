@@ -76,3 +76,8 @@ class PersistentDataModel(DataModel):
 
         session.commit()
         return True
+
+    def get_queries(self):
+        '''Gets an iterator over all the committed queries'''
+        return CommunityQuery.query.filter_by(
+            community_id=self.community_id).all()

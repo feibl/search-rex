@@ -23,7 +23,7 @@ def test__ThresholdQueryNeighbourhood():
 
     sut = ThresholdQueryNeighbourhood(
         data_model=fake_model,
-        query_similarity=fake_sim,
+        query_sim=fake_sim,
         sim_threshold=0.5)
 
     nbours = sut.get_neighbourhood(query_string)

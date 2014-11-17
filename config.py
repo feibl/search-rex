@@ -9,7 +9,6 @@ class Config(object):
     TESTING = False
     SQLALCHEMY_DATABASE_URI =\
         'postgresql://postgres:postgres@localhost/search_rex'
-    SQLALCHEMY_MIGRATE_REPO = os.path.join(basedir, 'db_search_rex')
 
     COMMUNITIES = set(['default', 'freaks', 'geeks'])
     DEFAULT_COMMUNITY = 'default'
@@ -27,3 +26,5 @@ class DevelopmentConfig(Config):
 
 class TestingConfig(Config):
     TESTING = True
+    SQLALCHEMY_DATABASE_URI =\
+        'sqlite:////tmp/search_rex.db'

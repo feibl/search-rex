@@ -12,7 +12,8 @@ def index():
 
 view_arg_parser = reqparse.RequestParser()
 view_arg_parser.add_argument('api_key', type=str, required=True)
-view_arg_parser.add_argument('community_id', type=str)
+view_arg_parser.add_argument(
+    'community_id', type=str, default=app.config['DEFAULT_COMMUNITY'])
 view_arg_parser.add_argument('query_string', type=str, required=True)
 view_arg_parser.add_argument('record_id', type=str, required=True)
 view_arg_parser.add_argument('session_id', type=str, required=True)
@@ -25,8 +26,6 @@ def view():
 
     api_key = args['api_key']
     community_id = args['community_id']
-    if not community_id:
-        community_id = app.config['DEFAULT_COMMUNITY']
     query_string = args['query_string']
     record_id = args['record_id']
     session_id = args['session_id']
@@ -46,7 +45,8 @@ def view():
 
 simq_arg_parser = reqparse.RequestParser()
 simq_arg_parser.add_argument('api_key', type=str, required=True)
-simq_arg_parser.add_argument('community_id', type=str)
+simq_arg_parser.add_argument(
+    'community_id', type=str, default=app.config['DEFAULT_COMMUNITY'])
 simq_arg_parser.add_argument('query_string', type=str, required=True)
 
 
@@ -62,7 +62,8 @@ def similar_queries():
 
 sreq_arg_parser = reqparse.RequestParser()
 sreq_arg_parser.add_argument('api_key', type=str, required=True)
-sreq_arg_parser.add_argument('community_id', type=str)
+sreq_arg_parser.add_argument(
+    'community_id', type=str, default=app.config['DEFAULT_COMMUNITY'])
 sreq_arg_parser.add_argument('query_string', type=str, required=True)
 
 

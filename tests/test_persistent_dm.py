@@ -71,3 +71,35 @@ class GetQueriesTestCase(PersistentDmTestCase):
         query_results = list(self.data_model.get_queries())
         assert len(query_results) == len(self.queries)
         assert sorted(query_results) == sorted(self.queries)
+
+
+class GetHitsForQueryTestCase(PersistentDmTestCase):
+
+    def setUp(self):
+        super(GetHitsForQueryTestCase, self).setUp()
+
+        self.query_string = 'query'
+        self.doc1 = 'doc1'
+        self.doc2 = 'doc2'
+
+        self.data_model.register_hit(
+            query_string=self.query_string, record_id=self.doc1,
+            t_stamp=datetime(1999, 1, 1), session_id=1)
+        self.data_model.register_hit(
+            query_string=self.query_string, record_id=self.doc1,
+            t_stamp=datetime(1999, 1, 2), session_id=2)
+        self.data_model.register_hit(
+            query_string=self.query_string, record_id=self.doc2,
+            t_stamp=datetime(1999, 1, 3), session_id=3)
+        self.data_model.register_hit(
+            query_string='other query', record_id=self.doc1,
+            t_stamp=datetime(1999, 1, 4), session_id=4)
+
+    def test__get_hits_for_query(self):
+        hits_per_record = {
+            record: hits for record, hits
+            in self.data_model.get_hits_for_query(self.query_string)
+        }
+        assert len(hits_per_record) == 2
+        assert hits_per_record[self.doc1] == 2
+        assert hits_per_record[self.doc2] == 1

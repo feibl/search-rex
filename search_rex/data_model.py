@@ -5,6 +5,8 @@ from models import ResultClick
 from models import SearchQuery
 from models import SearchSession
 
+from sqlalchemy import func
+
 from db_helper import get_one_or_create
 
 from . import db
@@ -83,3 +85,17 @@ class PersistentDataModel(DataModel):
         for q in CommunityQuery.query.filter_by(
                 community_id=self.community_id).all():
             yield q.query_string
+
+    def get_hits_for_query(self, query_string):
+        hit_query = db.session.query(
+            ResultClick.record_id,
+            func.count(ResultClick.query_string))
+        hit_query = hit_query.filter(
+            ResultClick.community_id == self.community_id,
+            ResultClick.query_string == query_string)
+        hit_query = hit_query.group_by(
+            ResultClick.record_id,
+            ResultClick.query_string)
+        for hit in hit_query.all():
+            print(hit)
+            yield hit

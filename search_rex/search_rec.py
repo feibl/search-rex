@@ -64,3 +64,32 @@ class GenericSearchResultRecommender(SearchResultRecommender):
 
     def get_similar_queries(self, query_string):
         return self.query_nhood.get_neighbourhood(query_string)
+
+    def recommend(self, query_string, n=None):
+        nbours = [
+            nbour for nbour, _
+            in self.get_similar_queries(query_string)
+        ]
+
+        hit_rows = []
+        nbour_sims = []
+        records = set()
+        for nbour in nbours:
+            hit_row = {
+                record_id: hits for record_id, hits in
+                self.data_model.get_hits_for_query(nbour)
+            }
+            for record in hit_row.keys():
+                if record not in records:
+                    records.add(record)
+            sim = self.query_sim.compute_similarity(
+                query_string, nbour)
+            hit_rows.append(hit_row)
+            nbour_sims.append(sim)
+
+        rel_scores = []
+        for record in records:
+            score = compute_w_relevance(record, hit_rows, nbour_sims)
+            rel_scores.append((record, score))
+
+        return sorted(rel_scores, key=lambda x: x[1], reverse=True)

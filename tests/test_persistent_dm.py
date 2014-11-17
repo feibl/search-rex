@@ -1,4 +1,5 @@
 from .test_base import BaseTestCase
+from search_rex import db
 from search_rex.data_model import PersistentDataModel
 from datetime import datetime
 from search_rex.models import ResultClick
@@ -10,11 +11,17 @@ from search_rex.models import SearchSession
 TEST_COMMUNITY = 'test_community'
 
 
-class RegisterHitTestCase(BaseTestCase):
+class PersistentDmTestCase(BaseTestCase):
+
+    def setUp(self):
+        super(PersistentDmTestCase, self).setUp()
+        self.data_model = PersistentDataModel(TEST_COMMUNITY)
+
+
+class RegisterHitTestCase(PersistentDmTestCase):
 
     def setUp(self):
         super(RegisterHitTestCase, self).setUp()
-        self.data_model = PersistentDataModel(TEST_COMMUNITY)
 
         self.query_string = 'query'
         self.session_id = '1234'
@@ -44,3 +51,23 @@ class RegisterHitTestCase(BaseTestCase):
         assert SearchSession.query.filter_by(
             session_id=self.session_id,
             time_created=self.t_stamp).one()
+
+
+class GetQueriesTestCase(PersistentDmTestCase):
+
+    def setUp(self):
+        super(GetQueriesTestCase, self).setUp()
+        self.queries = ['hello', 'darkness', 'my', 'friend']
+        session = db.session
+        for q in self.queries:
+            search_query = SearchQuery(query_string=q)
+            comm_query = CommunityQuery(
+                query_string=q, community_id=TEST_COMMUNITY)
+            session.add(search_query)
+            session.add(comm_query)
+        session.commit()
+
+    def test__get_queries(self):
+        query_results = list(self.data_model.get_queries())
+        assert len(query_results) == len(self.queries)
+        assert sorted(query_results) == sorted(self.queries)

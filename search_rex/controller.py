@@ -1,6 +1,7 @@
 from . import app
 from . import rec_systems
 from flask import request
+from flask import jsonify
 from flask.ext.restful import reqparse
 from datetime import datetime
 
@@ -63,7 +64,9 @@ def similar_queries():
         return 'No Community called: {}'.format(community_id)
     rec = rec_systems[community_id]
     similar_queries = rec.get_similar_queries(query_string)
-    return similar_queries
+    return jsonify(
+        {'results': [sim_q for sim_q in similar_queries]}
+    )
 
 
 sreq_arg_parser = reqparse.RequestParser()

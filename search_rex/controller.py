@@ -4,6 +4,7 @@ from flask import request
 from flask import jsonify
 from flask.ext.restful import reqparse
 from datetime import datetime
+from werkzeug.urls import url_unquote
 
 
 @app.route('/')
@@ -27,7 +28,7 @@ def view():
 
     api_key = args['api_key']
     community_id = args['community_id']
-    query_string = args['query_string']
+    query_string = url_unquote(args['query_string'])
     record_id = args['record_id']
     session_id = args['session_id']
     t_stamp = datetime.fromtimestamp(
@@ -58,7 +59,7 @@ def similar_queries():
 
     api_key = args['api_key']
     community_id = args['community_id']
-    query_string = args['query_string']
+    query_string = url_unquote(args['query_string'])
 
     if community_id not in rec_systems:
         return 'No Community called: {}'.format(community_id)
@@ -85,7 +86,7 @@ def recommend():
 
     api_key = args['api_key']
     community_id = args['community_id']
-    query_string = args['query_string']
+    query_string = url_unquote(args['query_string'])
 
     if community_id not in rec_systems:
         return 'No Community called: {}'.format(community_id)

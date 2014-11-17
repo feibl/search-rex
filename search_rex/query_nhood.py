@@ -23,8 +23,6 @@ class ThresholdQueryNeighbourhood(object):
             similarity = self.query_sim.compute_similarity(
                 query_string, other_q_string)
 
-            print('{}: {}'.format(other_q_string, similarity))
-
             if similarity >= self.sim_threshold:
                 neighbours.append((other_q_string, similarity))
 

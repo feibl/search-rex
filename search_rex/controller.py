@@ -64,6 +64,7 @@ def similar_queries():
         return 'No Community called: {}'.format(community_id)
     rec = rec_systems[community_id]
     similar_queries = rec.get_similar_queries(query_string)
+
     return jsonify(
         {'results': [sim_q for sim_q in similar_queries]}
     )
@@ -76,8 +77,8 @@ sreq_arg_parser.add_argument(
 sreq_arg_parser.add_argument('query_string', type=str, required=True)
 
 
-@app.route('/api/search_recommendation', methods=['GET'])
-def search_recommendation():
+@app.route('/api/recommend', methods=['GET'])
+def recommend():
     '''Recommends search results other users from the same community where
     interested in when using a similar query'''
     args = sreq_arg_parser.parse_args(request)
@@ -85,3 +86,12 @@ def search_recommendation():
     api_key = args['api_key']
     community_id = args['community_id']
     query_string = args['query_string']
+
+    if community_id not in rec_systems:
+        return 'No Community called: {}'.format(community_id)
+    rec = rec_systems[community_id]
+    recommendations = rec.recommend(query_string)
+
+    return jsonify(
+        {'results': [r for r in recommendations]}
+    )

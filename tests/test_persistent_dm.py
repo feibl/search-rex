@@ -78,28 +78,47 @@ class GetHitsForQueryTestCase(PersistentDmTestCase):
     def setUp(self):
         super(GetHitsForQueryTestCase, self).setUp()
 
-        self.query_string = 'query'
+        self.query_string1 = 'query'
+        self.query_string2 = 'query2'
+        self.query_string3 = 'query3'
+        self.other_query = 'other_query'
         self.doc1 = 'doc1'
         self.doc2 = 'doc2'
 
-        self.data_model.register_hit(
-            query_string=self.query_string, record_id=self.doc1,
-            t_stamp=datetime(1999, 1, 1), session_id=1)
-        self.data_model.register_hit(
-            query_string=self.query_string, record_id=self.doc1,
-            t_stamp=datetime(1999, 1, 2), session_id=2)
-        self.data_model.register_hit(
-            query_string=self.query_string, record_id=self.doc2,
-            t_stamp=datetime(1999, 1, 3), session_id=3)
-        self.data_model.register_hit(
-            query_string='other query', record_id=self.doc1,
-            t_stamp=datetime(1999, 1, 4), session_id=4)
+        self.hits = {
+            (self.query_string1, self.doc1): 2,
+            (self.query_string1, self.doc2): 1,
+            (self.query_string2, self.doc1): 1,
+            (self.query_string3, self.doc2): 1,
+            (self.other_query, self.doc1): 1,
+            (self.other_query, self.doc2): 1,
+        }
 
-    def test__get_hits_for_query(self):
+        session_id = 0
+        for i, ((query_string, doc), hits) in enumerate(self.hits.iteritems()):
+            for j in range(hits):
+                self.data_model.register_hit(
+                    query_string=query_string, record_id=doc,
+                    t_stamp=datetime(1999, 1, 1), session_id=session_id)
+                session_id += 1
+
+    def test__get_hits_for_query__one_query(self):
         hits_per_record = {
             record: hits for query_string, record, hits
-            in self.data_model.get_hits_for_queries([self.query_string])
+            in self.data_model.get_hits_for_queries([self.query_string1])
         }
         assert len(hits_per_record) == 2
         assert hits_per_record[self.doc1] == 2
         assert hits_per_record[self.doc2] == 1
+
+    def test__get_hits_for_query__multiple_queries(self):
+        hits_per_query = {
+            (query_string, record): hits for query_string, record, hits
+            in self.data_model.get_hits_for_queries(
+                [self.query_string1, self.query_string2, self.query_string3])
+        }
+        assert len(hits_per_query) == 4
+        assert hits_per_query[(self.query_string1, self.doc1)] == 2
+        assert hits_per_query[(self.query_string1, self.doc2)] == 1
+        assert hits_per_query[(self.query_string2, self.doc1)] == 1
+        assert hits_per_query[(self.query_string3, self.doc2)] == 1

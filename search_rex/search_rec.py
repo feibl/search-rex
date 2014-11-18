@@ -7,7 +7,7 @@ class Recommendation(object):
         self.record_id = None
         self.relevance_score = None
         self.comm_relevance = None
-        self.related_queries = []
+        self.related_queries = None
         self.last_interaction = None
         self.comm_popularity = None
 
@@ -111,12 +111,12 @@ class GenericSearchResultRecommender(SearchResultRecommender):
 
         sorted_scores = sorted(rel_scores, key=lambda x: x[1], reverse=True)
 
-        # Community Relevance:
-        community_rel = {}
+        # Relevance to current query:
+        query_relevance = {}
         if query_string in nbours:
             index = nbours.index(query_string)
             for record_id in hit_rows[index].keys():
-                community_rel[record_id] =\
+                query_relevance[record_id] =\
                     compute_relevance(record_id, hit_rows[index])
 
         # Related Queries:
@@ -130,7 +130,7 @@ class GenericSearchResultRecommender(SearchResultRecommender):
                 related_queries[record].append(nbour)
 
         # Time
-        last_selections = {
+        last_interactions = {
             record: timestamp for record, timestamp
             in self.data_model.last_interaction_time(records)
         }
@@ -147,8 +147,8 @@ class GenericSearchResultRecommender(SearchResultRecommender):
             recommendation.relevance_score = score
             recommendation.record_id = record
             recommendation.comm_relevance =\
-                community_rel[record] if record in community_rel else None
-            recommendation.last_interaction = last_selections[record]
+                query_relevance[record] if record in query_relevance else None
+            recommendation.last_interaction = last_interactions[record]
             recommendation.related_queries =\
                 related_queries[record] if record in related_queries else []
             recommendation.comm_popularity =\

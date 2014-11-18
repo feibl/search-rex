@@ -22,21 +22,21 @@ class DataModel(object):
         session'''
         raise NotImplementedError()
 
-    def get_hits_for_query(self, query_string):
-        '''Retrieves the hit row of the given query'''
+    def get_hits_for_queries(self, query_strings):
+        '''Retrieves the hit rows of the given queries'''
         raise NotImplementedError()
 
     def get_queries(self):
         '''Gets an iterator over all the committed queries'''
         raise NotImplementedError()
 
-    def last_interaction_time(self, record_id):
-        '''Returns the time when someone has lately interacted with the record
-        having the specified id'''
+    def last_interaction_time(self, record_ids):
+        '''Returns the time when someone has lately interacted with the
+        records specified by their ids'''
         raise NotImplementedError()
 
-    def popularity_rank(self, record_id):
-        '''Computes the popularity rank of a record'''
+    def popularity_rank(self, record_ids):
+        '''Computes the popularity rank for the given records'''
         raise NotImplementedError()
 
 
@@ -91,34 +91,59 @@ class PersistentDataModel(DataModel):
     def get_queries(self):
         '''Returns an iterator over all the queries committed by the
         community'''
-        for q in CommunityQuery.query.filter_by(
-                community_id=self.community_id).all():
-            yield q.query_string
-
-    def get_hits_for_query(self, query_string):
-        hit_query = db.session.query(
-            ResultClick.record_id,
-            func.count(ResultClick.query_string))
-        hit_query = hit_query.filter(
-            ResultClick.community_id == self.community_id,
-            ResultClick.query_string == query_string)
-        hit_query = hit_query.group_by(
-            ResultClick.record_id,
-            ResultClick.query_string)
-        for hit in hit_query.all():
-            print(hit)
-            yield hit
-
-    def last_interaction_time(self, record_id):
-        '''Returns the time when someone has lately interacted with the record
-        having the specified id'''
         query = (
-            db.session.query(ResultClick.time_created)
-            .filter_by(community_id=self.community_id, record_id=record_id)
-            .order_by(ResultClick.time_created.desc())
+            db.session.query(CommunityQuery.query_string)
+            .filter(CommunityQuery.community_id == self.community_id)
         )
-        return query.first()[0]
 
-    def popularity_rank(self, record_id):
-        '''Computes the popularity rank of a record'''
-        return 1.0
+        for query_string, in query:
+            yield query_string
+
+    def get_hits_for_queries(self, query_strings):
+        query = (
+            db.session.query(
+                ResultClick.query_string,
+                ResultClick.record_id,
+                func.count(ResultClick.query_string))
+            .filter(
+                ResultClick.community_id == self.community_id,
+                ResultClick.query_string.in_(query_strings))
+            .group_by(
+                ResultClick.query_string,
+                ResultClick.record_id)
+            .order_by(
+                ResultClick.query_string)
+        )
+
+        for query_string, record_id, count in query:
+            yield (query_string, record_id, count)
+
+    def last_interaction_time(self, record_ids):
+        query = (
+            db.session.query(
+                ResultClick.record_id,
+                func.max(ResultClick.time_created))
+            .filter(
+                ResultClick.community_id == self.community_id,
+                ResultClick.record_id.in_(record_ids))
+            .group_by(ResultClick.record_id)
+        )
+
+        for record_id, last_interaction in query:
+            yield (record_id, last_interaction)
+
+    def popularity_rank(self, record_ids):
+        query = (
+            db.session.query(
+                ResultClick.record_id,
+                func.rank().over(
+                    partition_by=ResultClick.record_id,
+                    order_by=func.count().desc()))
+            .filter(
+                ResultClick.community_id == self.community_id,
+                ResultClick.record_id.in_(record_ids))
+            .group_by(ResultClick.record_id)
+        )
+
+        for record_id, rank in query:
+            yield (record_id, rank)

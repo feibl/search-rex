@@ -26,7 +26,7 @@ def test__ThresholdQueryNeighbourhood():
         query_sim=fake_sim,
         sim_threshold=0.5)
 
-    nbours = sut.get_neighbourhood(query_string)
+    nbours = list(sut.get_neighbourhood(query_string))
 
     assert len(nbours) == 1
-    assert nbours[0] == ('fat rat', 0.5)
+    assert nbours[0] == 'fat rat'

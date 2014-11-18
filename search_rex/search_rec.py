@@ -1,3 +1,6 @@
+from itertools import groupby
+
+
 class Recommendation(object):
 
     def __init__(self):
@@ -77,32 +80,29 @@ class GenericSearchResultRecommender(SearchResultRecommender):
         return self.query_nhood.get_neighbourhood(query_string)
 
     def recommend(self, query_string, n=None):
-        # TODO: Explain recommandations
-        # Community: Relevance for current query
-        # Related: Other queries that also led to this result
-        # Time: Last time this result was selected
-        # Popularity: Rank over all records
         nbours = [
-            nbour for nbour, _
+            nbour for nbour
             in self.get_similar_queries(query_string)
         ]
 
-        hit_rows = []
-        nbour_sims = []
-        records = set()
+        nbour_sims = [
+            self.query_sim.compute_similarity(
+                query_string, nbour) for nbour in nbours
+        ]
 
-        for nbour in nbours:
-            hit_row = {
-                record_id: hits for record_id, hits in
-                self.data_model.get_hits_for_query(nbour)
-            }
-            for record in hit_row.keys():
+        records = set()
+        hit_rows = []
+        for nbour, group in\
+                groupby(
+                    self.data_model.get_hits_for_queries(nbours),
+                    key=lambda (nbour, record, hits): nbour):
+            hit_row = {}
+            for nbour, record, hits in group:
                 if record not in records:
                     records.add(record)
-            sim = self.query_sim.compute_similarity(
-                query_string, nbour)
+                hit_row[record] = hits
+
             hit_rows.append(hit_row)
-            nbour_sims.append(sim)
 
         rel_scores = []
         for record in records:
@@ -130,16 +130,16 @@ class GenericSearchResultRecommender(SearchResultRecommender):
                 related_queries[record].append(nbour)
 
         # Time
-        last_selections = {}
-        for record in records:
-            last_selections[record] =\
-                self.data_model.last_interaction_time(record)
+        last_selections = {
+            record: timestamp for record, timestamp
+            in self.data_model.last_interaction_time(records)
+        }
 
         # Popularity
-        popularity = {}
-        for record in records:
-            popularity[record] =\
-                self.data_model.popularity_rank(record)
+        popularity = {
+            record: rank for record, rank
+            in self.data_model.popularity_rank(records)
+        }
 
         recommendations = []
         for record, score in sorted_scores:

@@ -97,8 +97,8 @@ class GetHitsForQueryTestCase(PersistentDmTestCase):
 
     def test__get_hits_for_query(self):
         hits_per_record = {
-            record: hits for record, hits
-            in self.data_model.get_hits_for_query(self.query_string)
+            record: hits for query_string, record, hits
+            in self.data_model.get_hits_for_queries([self.query_string])
         }
         assert len(hits_per_record) == 2
         assert hits_per_record[self.doc1] == 2

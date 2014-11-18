@@ -94,5 +94,16 @@ def recommend():
     recommendations = rec.recommend(query_string)
 
     return jsonify(
-        {'results': [r for r in recommendations]}
+        {
+            'results':
+            [
+                {
+                    'record_id': r.record_id,
+                    'relevance_score': r.relevance_score,
+                    'community_relevance': r.comm_relevance,
+                    'community_popularity': r.comm_popularity,
+                    'related_queries': r.related_queries,
+                    'last_interaction': r.last_interaction,
+                } for r in recommendations]
+        }
     )

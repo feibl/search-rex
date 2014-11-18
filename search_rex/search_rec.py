@@ -1,3 +1,14 @@
+class Recommendation(object):
+
+    def __init__(self):
+        self.record_id = None
+        self.relevance_score = None
+        self.comm_relevance = None
+        self.related_queries = []
+        self.last_interaction = None
+        self.comm_popularity = None
+
+
 def compute_relevance(record_id, query_hits):
     if record_id not in query_hits:
         return 0.0
@@ -66,6 +77,11 @@ class GenericSearchResultRecommender(SearchResultRecommender):
         return self.query_nhood.get_neighbourhood(query_string)
 
     def recommend(self, query_string, n=None):
+        # TODO: Explain recommandations
+        # Community: Relevance for current query
+        # Related: Other queries that also led to this result
+        # Time: Last time this result was selected
+        # Popularity: Rank over all records
         nbours = [
             nbour for nbour, _
             in self.get_similar_queries(query_string)
@@ -74,6 +90,7 @@ class GenericSearchResultRecommender(SearchResultRecommender):
         hit_rows = []
         nbour_sims = []
         records = set()
+
         for nbour in nbours:
             hit_row = {
                 record_id: hits for record_id, hits in
@@ -92,4 +109,50 @@ class GenericSearchResultRecommender(SearchResultRecommender):
             score = compute_w_relevance(record, hit_rows, nbour_sims)
             rel_scores.append((record, score))
 
-        return sorted(rel_scores, key=lambda x: x[1], reverse=True)
+        sorted_scores = sorted(rel_scores, key=lambda x: x[1], reverse=True)
+
+        # Community Relevance:
+        community_rel = {}
+        if query_string in nbours:
+            index = nbours.index(query_string)
+            for record_id in hit_rows[index].keys():
+                community_rel[record_id] =\
+                    compute_relevance(record_id, hit_rows[index])
+
+        # Related Queries:
+        related_queries = {}
+        for i, nbour in enumerate(nbours):
+            if nbour == query_string:
+                continue
+            for record in hit_rows[i]:
+                if record not in related_queries:
+                    related_queries[record] = []
+                related_queries[record].append(nbour)
+
+        # Time
+        last_selections = {}
+        for record in records:
+            last_selections[record] =\
+                self.data_model.last_interaction_time(record)
+
+        # Popularity
+        popularity = {}
+        for record in records:
+            popularity[record] =\
+                self.data_model.popularity_rank(record)
+
+        recommendations = []
+        for record, score in sorted_scores:
+            recommendation = Recommendation()
+            recommendation.relevance_score = score
+            recommendation.record_id = record
+            recommendation.comm_relevance =\
+                community_rel[record] if record in community_rel else None
+            recommendation.last_interaction = last_selections[record]
+            recommendation.related_queries =\
+                related_queries[record] if record in related_queries else []
+            recommendation.comm_popularity =\
+                popularity[record] if record in popularity else None
+            recommendations.append(recommendation)
+
+        return recommendations

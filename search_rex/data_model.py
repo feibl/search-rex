@@ -30,6 +30,15 @@ class DataModel(object):
         '''Gets an iterator over all the committed queries'''
         raise NotImplementedError()
 
+    def last_interaction_time(self, record_id):
+        '''Returns the time when someone has lately interacted with the record
+        having the specified id'''
+        raise NotImplementedError()
+
+    def popularity_rank(self, record_id):
+        '''Computes the popularity rank of a record'''
+        raise NotImplementedError()
+
 
 class PersistentDataModel(DataModel):
     '''Stores the DataModel in a Database'''
@@ -99,3 +108,17 @@ class PersistentDataModel(DataModel):
         for hit in hit_query.all():
             print(hit)
             yield hit
+
+    def last_interaction_time(self, record_id):
+        '''Returns the time when someone has lately interacted with the record
+        having the specified id'''
+        query = (
+            db.session.query(ResultClick.time_created)
+            .filter_by(community_id=self.community_id, record_id=record_id)
+            .order_by(ResultClick.time_created.desc())
+        )
+        return query.first()[0]
+
+    def popularity_rank(self, record_id):
+        '''Computes the popularity rank of a record'''
+        return 1.0

@@ -6,10 +6,10 @@ class Recommendation(object):
     def __init__(self):
         self.record_id = None
         self.relevance_score = None
-        self.comm_relevance = None
+        self.target_query_relevance = None
         self.related_queries = None
-        self.last_interaction = None
-        self.comm_popularity = None
+        self.last_interaction_time = None
+        self.popularity_rank = None
 
 
 def compute_relevance(record_id, query_hits):
@@ -25,10 +25,10 @@ def compute_w_relevance(record_id, nbor_hit_rows, nbor_sims):
 
     total_rel = 0.0
     total_sim = 0.0
-    for i, nbor_hit_row in enumerate(nbor_hit_rows):
+    for query_string, nbor_hit_row in nbor_hit_rows.iteritems():
         if record_id not in nbor_hit_row:
             continue
-        sim = nbor_sims[i]
+        sim = nbor_sims[query_string]
         rel = compute_relevance(record_id, nbor_hit_row)
         total_rel += sim * rel
         total_sim += sim
@@ -85,13 +85,13 @@ class GenericSearchResultRecommender(SearchResultRecommender):
             in self.get_similar_queries(query_string)
         ]
 
-        nbour_sims = [
-            self.query_sim.compute_similarity(
+        nbour_sims = {
+            nbour: self.query_sim.compute_similarity(
                 query_string, nbour) for nbour in nbours
-        ]
+        }
 
         records = set()
-        hit_rows = []
+        hit_rows = {}
         for nbour, group in\
                 groupby(
                     self.data_model.get_hits_for_queries(nbours),
@@ -102,57 +102,80 @@ class GenericSearchResultRecommender(SearchResultRecommender):
                     records.add(record)
                 hit_row[record] = hits
 
-            hit_rows.append(hit_row)
+            hit_rows[nbour] = hit_row
 
-        rel_scores = []
+        rel_scores = {}
         for record in records:
             score = compute_w_relevance(record, hit_rows, nbour_sims)
-            rel_scores.append((record, score))
+            rel_scores[record] = score
 
-        sorted_scores = sorted(rel_scores, key=lambda x: x[1], reverse=True)
+        rec_builder = RecommendationBuilder(
+            query_string=query_string, relevance_scores=rel_scores,
+            hit_rows=hit_rows, data_model=self.data_model)
 
-        # Relevance to current query:
-        query_relevance = {}
-        if query_string in nbours:
-            index = nbours.index(query_string)
-            for record_id in hit_rows[index].keys():
-                query_relevance[record_id] =\
-                    compute_relevance(record_id, hit_rows[index])
+        rec_builder.set_current_relevance()
+        rec_builder.set_last_interaction_time()
+        rec_builder.set_popularity_rank()
+        rec_builder.set_related_queries()
 
-        # Related Queries:
-        related_queries = {}
-        for i, nbour in enumerate(nbours):
-            if nbour == query_string:
+        recs = rec_builder.get_recommendations()
+
+        return sorted(
+            recs.values(), key=lambda rec: rec.relevance_score, reverse=True)
+
+
+class RecommendationBuilder(object):
+
+    def __init__(self, query_string, relevance_scores, hit_rows, data_model):
+        self.query_string = query_string
+        self.relevance_scores = relevance_scores
+        self.hit_rows = hit_rows
+        self.data_model = data_model
+
+        self.recommendations = {}
+        for record, score in relevance_scores.iteritems():
+            rec = Recommendation()
+            rec.record_id = record
+            rec.relevance_score = score
+            self.recommendations[record] = rec
+            print((record, score))
+
+    def set_last_interaction_time(self):
+        '''Annotates every record with the timestamp of the last interaction'''
+        r_iter = self.data_model.last_interaction_time(
+            self.recommendations.keys())
+
+        for record, timestamp in r_iter:
+            self.recommendations[record].last_interaction_time = timestamp
+
+    def set_popularity_rank(self):
+        '''Annotates every record with its popularity rank'''
+        r_iter = self.data_model.popularity_rank(
+            self.recommendations.keys())
+
+        for record, rank in r_iter:
+            self.recommendations[record].popularity_rank = rank
+
+    def set_related_queries(self):
+        '''Annotates every record with query alternatives that also led to a
+        click on the result'''
+        for other_query, hit_row in self.hit_rows.iteritems():
+            if other_query == self.query_string:
                 continue
-            for record in hit_rows[i]:
-                if record not in related_queries:
-                    related_queries[record] = []
-                related_queries[record].append(nbour)
+            for record in hit_row:
+                if self.recommendations[record].related_queries is None:
+                    self.recommendations[record].related_queries = []
+                self.recommendations[record]\
+                    .related_queries.append(other_query)
 
-        # Time
-        last_interactions = {
-            record: timestamp for record, timestamp
-            in self.data_model.last_interaction_time(records)
-        }
+    def set_current_relevance(self):
+        '''Annotates records selected by the community when entering the same
+        target query with its relevance'''
+        target_hit_row = self.hit_rows[self.query_string]
 
-        # Popularity
-        popularity = {
-            record: rank for record, rank
-            in self.data_model.popularity_rank(records)
-        }
+        for record_id in target_hit_row.keys():
+            self.recommendations[record_id].target_query_relevance =\
+                compute_relevance(record_id, target_hit_row)
 
-        recommendations = []
-        for record, score in sorted_scores:
-            recommendation = Recommendation()
-            recommendation.relevance_score = score
-            recommendation.record_id = record
-            recommendation.comm_relevance =\
-                query_relevance[record] if record in query_relevance else None
-            recommendation.last_interaction = last_interactions[record]
-            recommendation.related_queries =\
-                related_queries[record] if record in related_queries else []
-            recommendation.comm_popularity =\
-                popularity[record] if record in popularity else None
-            recommendations.append(recommendation)
-
-        return recommendations
+    def get_recommendations(self):
+        return self.recommendations

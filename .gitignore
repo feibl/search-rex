@@ -10,3 +10,5 @@ venv/
 
 #folder with historic files
 _history/
+#folder with scripts for evaluating the recommender
+_test_scripts/

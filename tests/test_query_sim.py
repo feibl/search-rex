@@ -36,7 +36,8 @@ def test__jaccard_sim__empty_sets():
 def test__string_jaccard_sim():
     string1 = 'hello'
     string2 = 'yellow'
+    community_id = 'freaks'
 
     sut = StringJaccardSimilarity(k_shingles=3)
 
-    assert sut.compute_similarity(string1, string2) == 0.4
+    assert sut.compute_similarity(string1, string2, community_id) == 0.4

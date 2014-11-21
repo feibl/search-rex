@@ -41,19 +41,19 @@ class SearchResultRecommender(object):
     '''Recommender System for search results based on queries committed by
     members of a community'''
 
-    def recommend(self, query_string, n=None):
+    def recommend(self, query_string, community_id, n=None):
         '''Returns a list of n records that were relevant to the members of the
         community when committing the same or a similar query'''
         raise NotImplementedError()
 
     def register_hit(
-            self, query_string, record_id, t_stamp,
+            self, query_string, community_id, record_id, t_stamp,
             session_id):
         '''Stores a click on a search result recorded during the given
         session'''
         raise NotImplementedError()
 
-    def get_similar_queries(self, query_string):
+    def get_similar_queries(self, query_string, community_id):
         '''Gets similar queries that were committed by the given community
         '''
         raise NotImplementedError()
@@ -68,7 +68,7 @@ class GenericSearchResultRecommender(SearchResultRecommender):
         self.query_sim = query_sim
 
     def register_hit(
-            self, query_string, record_id, t_stamp,
+            self, query_string, community_id, record_id, t_stamp,
             session_id):
         '''Stores a click on a search result recorded during the given
         session'''
@@ -76,25 +76,25 @@ class GenericSearchResultRecommender(SearchResultRecommender):
             query_string=query_string, record_id=record_id,
             t_stamp=t_stamp, session_id=session_id)
 
-    def get_similar_queries(self, query_string):
+    def get_similar_queries(self, query_string, community_id):
         return self.query_nhood.get_neighbourhood(query_string)
 
-    def recommend(self, query_string, n=None):
+    def recommend(self, query_string, community_id, n=None):
         nbours = [
             nbour for nbour
-            in self.get_similar_queries(query_string)
+            in self.get_similar_queries(query_string, community_id)
         ]
 
         nbour_sims = {
             nbour: self.query_sim.compute_similarity(
-                query_string, nbour) for nbour in nbours
+                query_string, nbour, community_id) for nbour in nbours
         }
 
         records = set()
         hit_rows = {}
         for nbour, group in\
                 groupby(
-                    self.data_model.get_hits_for_queries(nbours),
+                    self.data_model.get_hits_for_queries(nbours, community_id),
                     key=lambda (nbour, record, hits): nbour):
             hit_row = {}
             for nbour, record, hits in group:
@@ -111,7 +111,8 @@ class GenericSearchResultRecommender(SearchResultRecommender):
 
         rec_builder = RecommendationBuilder(
             query_string=query_string, relevance_scores=rel_scores,
-            hit_rows=hit_rows, data_model=self.data_model)
+            hit_rows=hit_rows, data_model=self.data_model,
+            community_id=community_id)
 
         rec_builder.set_current_relevance()
         rec_builder.set_last_interaction_time()
@@ -126,11 +127,14 @@ class GenericSearchResultRecommender(SearchResultRecommender):
 
 class RecommendationBuilder(object):
 
-    def __init__(self, query_string, relevance_scores, hit_rows, data_model):
+    def __init__(
+            self, query_string, relevance_scores,
+            hit_rows, data_model, community_id):
         self.query_string = query_string
         self.relevance_scores = relevance_scores
         self.hit_rows = hit_rows
         self.data_model = data_model
+        self.community_id = community_id
 
         self.recommendations = {}
         for record, score in relevance_scores.iteritems():
@@ -143,7 +147,7 @@ class RecommendationBuilder(object):
     def set_last_interaction_time(self):
         '''Annotates every record with the timestamp of the last interaction'''
         r_iter = self.data_model.last_interaction_time(
-            self.recommendations.keys())
+            self.recommendations.keys(), self.community_id)
 
         for record, timestamp in r_iter:
             self.recommendations[record].last_interaction_time = timestamp
@@ -151,7 +155,7 @@ class RecommendationBuilder(object):
     def set_popularity_rank(self):
         '''Annotates every record with its popularity rank'''
         r_iter = self.data_model.popularity_rank(
-            self.recommendations.keys())
+            self.recommendations.keys(), self.community_id)
 
         for record, rank in r_iter:
             self.recommendations[record].popularity_rank = rank

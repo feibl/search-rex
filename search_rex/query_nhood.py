@@ -17,10 +17,10 @@ class ThresholdQueryNeighbourhood(object):
         self.query_sim = query_sim
         self.sim_threshold = sim_threshold
 
-    def get_neighbourhood(self, query_string):
-        for other_q_string in self.data_model.get_queries():
+    def get_neighbourhood(self, query_string, community_id):
+        for other_q_string in self.data_model.get_queries(community_id):
             similarity = self.query_sim.compute_similarity(
-                query_string, other_q_string)
+                query_string, other_q_string, community_id)
 
             if similarity >= self.sim_threshold:
                 yield other_q_string

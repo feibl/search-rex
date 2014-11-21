@@ -9,7 +9,7 @@ from sqlalchemy import func
 
 from db_helper import get_one_or_create
 
-from . import db
+from database import db
 
 
 class DataModel(object):
@@ -45,10 +45,10 @@ class PersistentDataModel(DataModel):
 
     def __init__(self, community_id):
         self.community_id = community_id
-        session = db.session
-        get_one_or_create(
-            session, Community, community_id=community_id)
-        session.commit()
+        # session = db.session
+        # get_one_or_create(
+        #     session, Community, community_id=community_id)
+        # session.commit()
 
     def register_hit(
             self, query_string, record_id, t_stamp, session_id):

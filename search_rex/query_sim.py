@@ -4,7 +4,7 @@ def shingle(doc_string, k):
     n_chars = len(doc_string)
 
     if n_chars < k:
-        return doc_string
+        return set([doc_string])
 
     shingles = set()
     for i_start in range(n_chars-(k-1)):

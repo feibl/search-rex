@@ -1,13 +1,3 @@
-from flask import Flask
-from flask.ext.sqlalchemy import SQLAlchemy
-
-
-app = Flask(__name__)
-
-app.config.from_object('config.DevelopmentConfig')
-
-db = SQLAlchemy(app)
-
 from search_rec import GenericSearchResultRecommender
 from query_sim import StringJaccardSimilarity
 from query_nhood import ThresholdQueryNeighbourhood
@@ -16,7 +6,7 @@ from data_model import PersistentDataModel
 rec_systems = {}
 
 
-def init_communities():
+def init_communities(app):
     for community_id in app.config['COMMUNITIES']:
         d_model = PersistentDataModel(community_id)
         q_sim = StringJaccardSimilarity(k_shingles=3)
@@ -26,5 +16,3 @@ def init_communities():
             data_model=d_model,
             query_sim=q_sim,
             query_nhood=q_nhood)
-
-from . import models, controller

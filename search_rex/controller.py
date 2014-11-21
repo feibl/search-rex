@@ -1,28 +1,25 @@
-from . import app
 from . import rec_systems
 from flask import request
 from flask import jsonify
+from flask import Blueprint
 from flask.ext.restful import reqparse
 from datetime import datetime
 from werkzeug.urls import url_unquote
 
 
-@app.route('/')
-def index():
-    return 'Welcome!'
+rec_api = Blueprint('rec_api', __name__)
 
 
 view_arg_parser = reqparse.RequestParser()
 view_arg_parser.add_argument('api_key', type=str, required=True)
-view_arg_parser.add_argument(
-    'community_id', type=str, default=app.config['DEFAULT_COMMUNITY'])
+view_arg_parser.add_argument('community_id', type=str, required=True)
 view_arg_parser.add_argument('query_string', type=str, required=True)
 view_arg_parser.add_argument('record_id', type=str, required=True)
 view_arg_parser.add_argument('session_id', type=str, required=True)
 view_arg_parser.add_argument('timestamp', type=int, required=True)
 
 
-@app.route('/api/view', methods=['GET'])
+@rec_api.route('/api/view', methods=['GET'])
 def view():
     args = view_arg_parser.parse_args(request)
 
@@ -47,12 +44,11 @@ def view():
 
 simq_arg_parser = reqparse.RequestParser()
 simq_arg_parser.add_argument('api_key', type=str, required=True)
-simq_arg_parser.add_argument(
-    'community_id', type=str, default=app.config['DEFAULT_COMMUNITY'])
+simq_arg_parser.add_argument('community_id', type=str, required=True)
 simq_arg_parser.add_argument('query_string', type=str, required=True)
 
 
-@app.route('/api/similar_queries', methods=['GET'])
+@rec_api.route('/api/similar_queries', methods=['GET'])
 def similar_queries():
     '''Returns a list of queries which are similar to the target query'''
     args = simq_arg_parser.parse_args(request)
@@ -73,12 +69,11 @@ def similar_queries():
 
 sreq_arg_parser = reqparse.RequestParser()
 sreq_arg_parser.add_argument('api_key', type=str, required=True)
-sreq_arg_parser.add_argument(
-    'community_id', type=str, default=app.config['DEFAULT_COMMUNITY'])
+sreq_arg_parser.add_argument('community_id', type=str, required=True)
 sreq_arg_parser.add_argument('query_string', type=str, required=True)
 
 
-@app.route('/api/recommend', methods=['GET'])
+@rec_api.route('/api/recommend', methods=['GET'])
 def recommend():
     '''Recommends search results other users from the same community where
     interested in when using a similar query'''

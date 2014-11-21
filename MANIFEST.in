@@ -1,0 +1,2 @@
+# Files to include (e.g. templates, static)
+# include_package_data in setup.py must be set to True

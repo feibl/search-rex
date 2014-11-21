@@ -1,6 +1,6 @@
 from sqlalchemy.orm import relationship
 from sqlalchemy import ForeignKeyConstraint
-from . import db
+from database import db
 
 
 class Community(db.Model):

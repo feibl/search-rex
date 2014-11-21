@@ -1,11 +1,12 @@
 from .test_base import BaseTestCase
-from search_rex import db
+from search_rex.database import db
 from search_rex.data_model import PersistentDataModel
 from datetime import datetime
 from search_rex.models import ResultClick
 from search_rex.models import CommunityQuery
 from search_rex.models import SearchQuery
 from search_rex.models import SearchSession
+from search_rex.models import Community
 
 
 TEST_COMMUNITY = 'test_community'
@@ -15,7 +16,12 @@ class PersistentDmTestCase(BaseTestCase):
 
     def setUp(self):
         super(PersistentDmTestCase, self).setUp()
-        self.data_model = PersistentDataModel(TEST_COMMUNITY)
+        self.data_model = PersistentDataModel()
+        test_community = Community()
+        test_community.community_id = TEST_COMMUNITY
+        session = db.session
+        session.add(test_community)
+        session.commit()
 
 
 class RegisterHitTestCase(PersistentDmTestCase):
@@ -29,7 +35,8 @@ class RegisterHitTestCase(PersistentDmTestCase):
         self.t_stamp = datetime(1999, 11, 11)
 
         self.data_model.register_hit(
-            query_string=self.query_string, record_id=self.record_id,
+            query_string=self.query_string,
+            community_id=TEST_COMMUNITY, record_id=self.record_id,
             t_stamp=self.t_stamp, session_id=self.session_id)
 
     def test__click_created(self):
@@ -68,7 +75,7 @@ class GetQueriesTestCase(PersistentDmTestCase):
         session.commit()
 
     def test__get_queries(self):
-        query_results = list(self.data_model.get_queries())
+        query_results = list(self.data_model.get_queries(TEST_COMMUNITY))
         assert len(query_results) == len(self.queries)
         assert sorted(query_results) == sorted(self.queries)
 
@@ -98,14 +105,16 @@ class GetHitsForQueryTestCase(PersistentDmTestCase):
         for i, ((query_string, doc), hits) in enumerate(self.hits.iteritems()):
             for j in range(hits):
                 self.data_model.register_hit(
-                    query_string=query_string, record_id=doc,
-                    t_stamp=datetime(1999, 1, 1), session_id=session_id)
+                    query_string=query_string, community_id=TEST_COMMUNITY,
+                    record_id=doc, t_stamp=datetime(1999, 1, 1),
+                    session_id=session_id)
                 session_id += 1
 
     def test__get_hits_for_query__one_query(self):
         hits_per_record = {
             record: hits for query_string, record, hits
-            in self.data_model.get_hits_for_queries([self.query_string1])
+            in self.data_model.get_hits_for_queries(
+                [self.query_string1], community_id=TEST_COMMUNITY)
         }
         assert len(hits_per_record) == 2
         assert hits_per_record[self.doc1] == 2
@@ -115,7 +124,8 @@ class GetHitsForQueryTestCase(PersistentDmTestCase):
         hits_per_query = {
             (query_string, record): hits for query_string, record, hits
             in self.data_model.get_hits_for_queries(
-                [self.query_string1, self.query_string2, self.query_string3])
+                [self.query_string1, self.query_string2, self.query_string3],
+                community_id=TEST_COMMUNITY)
         }
         assert len(hits_per_query) == 4
         assert hits_per_query[(self.query_string1, self.doc1)] == 2

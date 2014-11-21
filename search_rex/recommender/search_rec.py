@@ -73,11 +73,11 @@ class GenericSearchResultRecommender(SearchResultRecommender):
         '''Stores a click on a search result recorded during the given
         session'''
         return self.data_model.register_hit(
-            query_string=query_string, record_id=record_id,
-            t_stamp=t_stamp, session_id=session_id)
+            query_string=query_string, community_id=community_id,
+            record_id=record_id, t_stamp=t_stamp, session_id=session_id)
 
     def get_similar_queries(self, query_string, community_id):
-        return self.query_nhood.get_neighbourhood(query_string)
+        return self.query_nhood.get_neighbourhood(query_string, community_id)
 
     def recommend(self, query_string, community_id, n=None):
         nbours = [

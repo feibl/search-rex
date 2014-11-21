@@ -1,5 +1,5 @@
 from flask import Flask
-from database import db
+from core import db
 
 
 def create_app(config_path=None):
@@ -7,7 +7,7 @@ def create_app(config_path=None):
     app.config.from_object(
         config_path if config_path else 'config.DevelopmentConfig')
 
-    from controller import rec_api
+    from recommender.controller import rec_api
 
     app.register_blueprint(rec_api)
 

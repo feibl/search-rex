@@ -1,4 +1,3 @@
-from . import rec_systems
 from flask import request
 from flask import jsonify
 from flask import Blueprint
@@ -6,6 +5,8 @@ from flask.ext.restful import reqparse
 from datetime import datetime
 from werkzeug.urls import url_unquote
 
+
+from ..core import rec_sys
 
 rec_api = Blueprint('rec_api', __name__)
 
@@ -32,12 +33,9 @@ def view():
         args['timestamp']
     ).strftime('%Y-%m-%d %H:%M:%S')
 
-    if community_id not in rec_systems:
-        return 'No Community called: {}'.format(community_id)
-    rec = rec_systems[community_id]
-    rec.register_hit(
-        query_string=query_string, record_id=record_id,
-        t_stamp=t_stamp, session_id=session_id)
+    rec_sys.register_hit(
+        query_string=query_string, community_id=community_id,
+        record_id=record_id, t_stamp=t_stamp, session_id=session_id)
 
     return 'Complete'
 
@@ -57,10 +55,7 @@ def similar_queries():
     community_id = args['community_id']
     query_string = url_unquote(args['query_string'])
 
-    if community_id not in rec_systems:
-        return 'No Community called: {}'.format(community_id)
-    rec = rec_systems[community_id]
-    similar_queries = rec.get_similar_queries(query_string)
+    similar_queries = rec_sys.get_similar_queries(query_string, community_id)
 
     return jsonify(
         {'results': [sim_q for sim_q in similar_queries]}
@@ -83,10 +78,8 @@ def recommend():
     community_id = args['community_id']
     query_string = url_unquote(args['query_string'])
 
-    if community_id not in rec_systems:
-        return 'No Community called: {}'.format(community_id)
-    rec = rec_systems[community_id]
-    recommendations = rec.recommend(query_string)
+    recommendations = rec_sys.recommend(
+        query_string, community_id=community_id)
 
     return jsonify(
         {

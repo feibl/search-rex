@@ -6,9 +6,9 @@ from models import SearchSession
 
 from sqlalchemy import func
 
-from db_helper import get_one_or_create
+from ..db_helper import get_one_or_create
 
-from database import db
+from ..core import db
 
 
 class DataModel(object):

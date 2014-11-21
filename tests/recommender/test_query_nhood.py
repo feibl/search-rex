@@ -1,6 +1,6 @@
-from search_rex.query_nhood import ThresholdQueryNeighbourhood
-from search_rex.query_sim import QuerySimilarity
-from search_rex.data_model import DataModel
+from search_rex.recommender.query_nhood import ThresholdQueryNeighbourhood
+from search_rex.recommender.query_sim import QuerySimilarity
+from search_rex.recommender.data_model import DataModel
 from mock import Mock
 
 

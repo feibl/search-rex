@@ -1,12 +1,12 @@
-from .test_base import BaseTestCase
-from search_rex.database import db
-from search_rex.data_model import PersistentDataModel
+from ..test_base import BaseTestCase
+from search_rex.core import db
+from search_rex.recommender.data_model import PersistentDataModel
 from datetime import datetime
-from search_rex.models import ResultClick
-from search_rex.models import CommunityQuery
-from search_rex.models import SearchQuery
-from search_rex.models import SearchSession
-from search_rex.models import Community
+from search_rex.recommender.models import ResultClick
+from search_rex.recommender.models import CommunityQuery
+from search_rex.recommender.models import SearchQuery
+from search_rex.recommender.models import SearchSession
+from search_rex.recommender.models import Community
 
 
 TEST_COMMUNITY = 'test_community'

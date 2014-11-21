@@ -1,6 +1,6 @@
 from flask.ext.testing import TestCase
 import os
-from search_rex.database import db
+from search_rex.core import db
 from search_rex.factory import create_app
 
 _cwd = os.path.dirname(os.path.abspath(__file__))

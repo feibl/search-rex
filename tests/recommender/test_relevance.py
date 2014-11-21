@@ -1,5 +1,5 @@
-from search_rex.search_rec import compute_relevance
-from search_rex.search_rec import compute_w_relevance
+from search_rex.recommender.search_rec import compute_relevance
+from search_rex.recommender.search_rec import compute_w_relevance
 
 
 def test__compute_relevance__record_present():

@@ -1,5 +1,5 @@
-from search_rex.query_sim import jaccard_sim, shingle
-from search_rex.query_sim import StringJaccardSimilarity
+from search_rex.recommender.query_sim import jaccard_sim, shingle
+from search_rex.recommender.query_sim import StringJaccardSimilarity
 
 
 def test__shingle():

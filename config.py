@@ -10,10 +10,6 @@ class Config(object):
     SQLALCHEMY_DATABASE_URI =\
         'postgresql://postgres:postgres@localhost/search_rex'
 
-    COMMUNITIES = set(['default', 'freaks', 'geeks'])
-    DEFAULT_COMMUNITY = 'default'
-    assert DEFAULT_COMMUNITY in COMMUNITIES
-
 
 class ProductionConfig(Config):
     pass

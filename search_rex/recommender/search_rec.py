@@ -175,6 +175,9 @@ class RecommendationBuilder(object):
     def set_current_relevance(self):
         '''Annotates records selected by the community when entering the same
         target query with its relevance'''
+        if self.query_string not in self.hit_rows:
+            return
+
         target_hit_row = self.hit_rows[self.query_string]
 
         for record_id in target_hit_row.keys():

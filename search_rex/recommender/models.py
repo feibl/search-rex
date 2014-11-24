@@ -46,7 +46,7 @@ class Record(db.Model):
 class SearchSession(db.Model):
     __tablename__ = 'search_session'
 
-    session_id = db.Column(db.Integer, primary_key=True)
+    session_id = db.Column(db.String(256), primary_key=True)
     time_created = db.Column(
         db.DateTime(), index=True, nullable=False)
 
@@ -55,7 +55,7 @@ class ResultClick(db.Model):
     __tablename__ = 'result_click'
 
     session_id = db.Column(
-        db.Integer, db.ForeignKey('search_session.session_id'),
+        db.String(256), db.ForeignKey('search_session.session_id'),
         index=True, nullable=False, primary_key=True)
     query_string = db.Column(
         db.Text(), index=True, nullable=False, primary_key=True)

@@ -13,8 +13,4 @@ def create_app(config_path=None):
 
     db.init_app(app)
 
-    with app.app_context():
-        from . import models
-        db.create_all()
-
     return app

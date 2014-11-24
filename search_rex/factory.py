@@ -7,7 +7,7 @@ def create_app(config_path=None):
     app.config.from_object(
         config_path if config_path else 'config.DevelopmentConfig')
 
-    from recommender.controller import rec_api
+    from api.recommender import rec_api
 
     app.register_blueprint(rec_api)
 

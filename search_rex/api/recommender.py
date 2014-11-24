@@ -5,8 +5,8 @@ from flask.ext.restful import reqparse
 from datetime import datetime
 from werkzeug.urls import url_unquote
 
+from ..services import rec_service
 
-from ..core import rec_sys
 
 rec_api = Blueprint('rec_api', __name__)
 
@@ -33,7 +33,7 @@ def view():
         args['timestamp']
     ).strftime('%Y-%m-%d %H:%M:%S')
 
-    rec_sys.register_hit(
+    rec_service.register_hit(
         query_string=query_string, community_id=community_id,
         record_id=record_id, t_stamp=t_stamp, session_id=session_id)
 
@@ -55,7 +55,8 @@ def similar_queries():
     community_id = args['community_id']
     query_string = url_unquote(args['query_string'])
 
-    similar_queries = rec_sys.get_similar_queries(query_string, community_id)
+    similar_queries = rec_service.get_similar_queries(
+        query_string, community_id)
 
     return jsonify(
         {'results': [sim_q for sim_q in similar_queries]}
@@ -78,7 +79,7 @@ def recommend():
     community_id = args['community_id']
     query_string = url_unquote(args['query_string'])
 
-    recommendations = rec_sys.recommend(
+    recommendations = rec_service.recommend(
         query_string, community_id=community_id)
 
     return jsonify(

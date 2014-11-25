@@ -154,11 +154,13 @@ class RecommendationBuilder(object):
 
     def set_popularity_rank(self):
         '''Annotates every record with its popularity rank'''
-        r_iter = self.data_model.popularity_rank(
-            self.recommendations.keys(), self.community_id)
+        # r_iter = self.data_model.popularity_rank(
+        #     self.recommendations.keys(), self.community_id)
 
-        for record, rank in r_iter:
-            self.recommendations[record].popularity_rank = rank
+        # for record, rank in r_iter:
+        #     self.recommendations[record].popularity_rank = rank
+        for record_id in self.recommendations.keys():
+            self.recommendations[record_id].popularity_rank = 1
 
     def set_related_queries(self):
         '''Annotates every record with query alternatives that also led to a

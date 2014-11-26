@@ -14,14 +14,17 @@ TEST_COMMUNITY = 'test_community'
 
 class PersistentDmTestCase(BaseTestCase):
 
-    def setUp(self):
-        super(PersistentDmTestCase, self).setUp()
-        self.data_model = PersistentDataModel()
+    def create_community(self, community_id):
         test_community = Community()
         test_community.community_id = TEST_COMMUNITY
         session = db.session
         session.add(test_community)
         session.commit()
+
+    def setUp(self):
+        super(PersistentDmTestCase, self).setUp()
+        self.data_model = PersistentDataModel()
+        self.create_community(TEST_COMMUNITY)
 
 
 class RegisterHitTestCase(PersistentDmTestCase):
@@ -111,24 +114,33 @@ class GetHitsForQueryTestCase(PersistentDmTestCase):
                 session_id += 1
 
     def test__get_hits_for_query__one_query(self):
-        hits_per_record = {
-            record: hits for query_string, record, hits
-            in self.data_model.get_hits_for_queries(
-                [self.query_string1], community_id=TEST_COMMUNITY)
+        db_query = self.data_model.get_hits_for_queries(
+            [self.query_string1], community_id=TEST_COMMUNITY)
+
+        hit_rows = {
+            q_string: hit_row for q_string, hit_row in db_query
         }
-        assert len(hits_per_record) == 2
-        assert hits_per_record[self.doc1] == 2
-        assert hits_per_record[self.doc2] == 1
+        assert len(hit_rows) == 1
+        assert len(hit_rows[self.query_string1]) == 2
+        assert hit_rows[self.query_string1][self.doc1].total_hits == 2
+        assert hit_rows[self.query_string1][self.doc2].total_hits == 1
 
     def test__get_hits_for_query__multiple_queries(self):
-        hits_per_query = {
-            (query_string, record): hits for query_string, record, hits
-            in self.data_model.get_hits_for_queries(
-                [self.query_string1, self.query_string2, self.query_string3],
-                community_id=TEST_COMMUNITY)
+        query_strings = [
+            self.query_string1,
+            self.query_string2,
+            self.query_string3
+        ]
+
+        db_query = self.data_model.get_hits_for_queries(
+            query_strings, community_id=TEST_COMMUNITY)
+
+        hit_rows = {
+            q_string: hit_row for q_string, hit_row in db_query
         }
-        assert len(hits_per_query) == 4
-        assert hits_per_query[(self.query_string1, self.doc1)] == 2
-        assert hits_per_query[(self.query_string1, self.doc2)] == 1
-        assert hits_per_query[(self.query_string2, self.doc1)] == 1
-        assert hits_per_query[(self.query_string3, self.doc2)] == 1
+
+        assert len(hit_rows) == 3
+        assert hit_rows[self.query_string1][self.doc1].total_hits == 2
+        assert hit_rows[self.query_string1][self.doc2].total_hits == 1
+        assert hit_rows[self.query_string2][self.doc1].total_hits == 1
+        assert hit_rows[self.query_string3][self.doc2].total_hits == 1

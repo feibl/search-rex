@@ -79,20 +79,14 @@ def recommend():
     community_id = args['community_id']
     query_string = url_unquote(args['query_string'])
 
-    recommendations = rec_service.recommend(
+    recs = rec_service.recommend(
         query_string, community_id=community_id)
 
     return jsonify(
         {
             'results':
             [
-                {
-                    'record_id': r.record_id,
-                    'relevance_score': r.relevance_score,
-                    'target_query_relevance': r.target_query_relevance,
-                    'popularity_rank': r.popularity_rank,
-                    'related_queries': r.related_queries,
-                    'last_interaction_time': r.last_interaction_time,
-                } for r in recommendations]
+                rec.serialize() for rec in recs
+            ]
         }
     )

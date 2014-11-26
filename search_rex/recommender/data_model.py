@@ -5,6 +5,7 @@ from models import SearchQuery
 from models import SearchSession
 
 from sqlalchemy import func
+from itertools import groupby
 
 from ..db_helper import get_one_or_create
 
@@ -42,8 +43,9 @@ class DataModel(object):
 class PersistentDataModel(DataModel):
     '''Stores the DataModel in a Database'''
 
-    def __init__(self):
-        pass
+    def __init__(self, half_life=600, life_span=1200):
+        self.half_life = half_life
+        self.life_span = life_span
 
     def register_hit(
             self, query_string, community_id, record_id, t_stamp, session_id):
@@ -95,11 +97,23 @@ class PersistentDataModel(DataModel):
             yield query_string
 
     def get_hits_for_queries(self, query_strings, community_id):
+        """
+        Returns the query hit information
+
+        To this belongs the query, record, record popularity, last interaction,
+        overall hits and the adjusted hits
+        """
         query = (
             db.session.query(
                 ResultClick.query_string,
                 ResultClick.record_id,
-                func.count(ResultClick.query_string))
+                func.count().label('total_hits'),
+                func.sum(func.hit_decay(
+                    ResultClick.time_created, self.half_life,
+                    self.life_span)
+                ).label('decayed_hits'),
+                func.max(ResultClick.time_created).label('last_interaction'),
+                )
             .filter(
                 ResultClick.community_id == community_id,
                 ResultClick.query_string.in_(query_strings))
@@ -110,8 +124,13 @@ class PersistentDataModel(DataModel):
                 ResultClick.query_string)
         )
 
-        for query_string, record_id, count in query:
-            yield (query_string, record_id, count)
+        for q_string, group in groupby(query, key=lambda h: h.query_string):
+            yield (
+                q_string,
+                {
+                    hit.record_id: hit for hit in group
+                }
+            )
 
     def last_interaction_time(self, record_ids, community_id):
         query = (

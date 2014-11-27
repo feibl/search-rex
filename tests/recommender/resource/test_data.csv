@@ -1,0 +1,62 @@
+query,record,time,session
+caesar,Julius Caesar,2013-12-11 12:00:00,1
+caesar,Julius Caesar,2013-12-12 12:00:00,2
+caesar,Julius Caesar,2013-12-13 12:00:00,3
+caesar,Julius Caesar,2013-12-14 12:00:00,4
+caesar,Gallia,2013-12-15 12:00:00,5
+caesar,Asterix,2013-12-16 12:00:00,6
+caesar,Asterix,2013-12-17 12:00:00,7
+caesar,Cleopatra,2013-12-18 12:00:00,8
+
+julius caesar,Julius Caesar,2013-01-10 12:00:00,101
+julius caesar,Julius Caesar,2013-01-11 12:00:00,102
+julius caesar,Julius Caesar,2013-01-12 12:00:00,103
+julius caesar,Julius Caesar,2013-01-13 12:00:00,104
+julius caesar,Julius Caesar,2013-01-14 12:00:00,105
+julius caesar,Julius Caesar,2013-01-15 12:00:00,106
+julius caesar,Cleopatra,2013-01-16 12:00:00,107
+julius caesar,Cleopatra,2013-01-17 12:00:00,108
+julius caesar,Brutus,2013-01-18 12:00:00,109
+julius caesar,Brutus,2013-01-19 12:00:00,110
+julius caesar,Brutus,2013-01-20 12:00:00,111
+
+asterix,Julius Caesar,2013-03-01 12:00:00,200
+asterix,Julius Caesar,2013-03-02 12:00:00,201
+asterix,Julius Caesar,2013-03-03 12:00:00,202
+asterix,Asterix,2013-03-04 12:00:00,203
+asterix,Asterix,2013-03-05 12:00:00,204
+asterix,Asterix,2013-03-06 12:00:00,205
+asterix,Asterix,2013-03-07 12:00:00,206
+asterix,Asterix,2013-03-08 12:00:00,207
+asterix,Asterix,2013-03-09 12:00:00,208
+asterix,Cleopatra,2013-03-10 12:00:00,209
+asterix,Cleopatra,2013-03-11 12:00:00,210
+asterix,Gallia,2013-03-12 12:00:00,203
+asterix,Gallia,2013-03-13 12:00:00,203
+asterix,Gallia,2013-03-14 12:00:00,203
+
+obelix,Gallia,2013-05-01 12:00:00,300
+obelix,Gallia,2013-05-02 12:00:00,301
+obelix,Asterix,2013-05-03 12:00:00,302
+obelix,Asterix,2013-05-04 12:00:00,303
+obelix,Asterix,2013-05-05 12:00:00,304
+obelix,Asterix,2013-05-06 12:00:00,305
+obelix,Menhir,2013-05-07 12:00:00,306
+obelix,Menhir,2013-05-08 12:00:00,307
+obelix,Menhir,2013-05-09 12:00:00,308
+
+cleopatra,Julius Caesar,2013-07-01 12:00:00,401
+cleopatra,Julius Caesar,2013-07-03 12:00:00,403
+cleopatra,Asterix,2013-07-04 12:00:00,404
+cleopatra,Cleopatra,2013-07-05 12:00:00,405
+cleopatra,Cleopatra,2013-07-06 12:00:00,406
+cleopatra,Cleopatra,2013-07-07 12:00:00,407
+cleopatra,Cleopatra,2013-07-08 12:00:00,408
+
+napoleon,Napoleon,2013-09-01 12:00:00,501
+napoleon,Napoleon,2013-09-02 12:00:00,502
+napoleon,Napoleon,2013-09-03 12:00:00,503
+napoleon,Napoleon,2013-09-04 12:00:00,504
+napoleon,Napoleon,2013-09-05 12:00:00,505
+
+caesar salad,Caesar Salad,2013-11-01 12:00:00,600

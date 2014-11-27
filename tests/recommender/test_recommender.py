@@ -179,18 +179,12 @@ class RecommendationTestCase(BaseTestCase):
 
         assert recs[0].current_query is None
 
-    def test__recommend__query_caesar(self):
+    def test__recommend__recs_ordered_by_score(self):
         recs = self.sut.recommend(
             query_string=query_caesar,
             community_id=TEST_COMMUNITY)
 
         assert len(recs) == 6
-
-    def test__recommend__query_caesar__recs_ordered_by_score(self):
-        recs = self.sut.recommend(
-            query_string=query_caesar,
-            community_id=TEST_COMMUNITY)
-
         assert recs[0].record_id == record_caesar
         assert recs[1].record_id == record_cleopatra
         assert recs[2].record_id == record_brutus
@@ -205,3 +199,16 @@ class RecommendationTestCase(BaseTestCase):
             max_results=3)
 
         assert len(recs) == 3
+        assert recs[0].record_id == record_caesar
+        assert recs[1].record_id == record_cleopatra
+        assert recs[2].record_id == record_brutus
+
+    def test__recommend__current_query_not_in_related_queries(self):
+        recs = self.sut.recommend(
+            query_string=query_caesar,
+            community_id=TEST_COMMUNITY)
+
+        assert recs[0].current_query.query_string == query_caesar
+        assert len(recs[0].related_queries) == 2
+        assert recs[0].related_queries[0].query_string == query_julius_caesar
+        assert recs[0].related_queries[1].query_string == query_caesar_salad

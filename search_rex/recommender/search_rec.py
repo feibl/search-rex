@@ -235,6 +235,10 @@ class GenericSearchResultRecommender(SearchResultRecommender):
                     else:
                         rec.related_queries.append(q_details)
 
+            rec.related_queries = sorted(
+                rec.related_queries, key=lambda q: q.decayed_hits,
+                reverse=True)
+
             recs[record] = rec
 
         sorted_recs = sorted(

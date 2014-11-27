@@ -1,5 +1,6 @@
 from search_rex.recommender.search_rec import relevance
-from search_rex.recommender.search_rec import log_frequency
+from search_rex.recommender.search_rec import LogFrequency
+from search_rex.recommender.search_rec import Frequency
 from search_rex.recommender.search_rec import WeightedScorer
 from ..test_util import assert_almost_equal
 
@@ -56,24 +57,64 @@ def test__relevance__total_hit_row_is_empty():
     assert relevance(doc_1, {}) == 0.0
 
 
+def test__frequency__record_present():
+    sut = Frequency()
+    hit_row = {doc_1: 8, doc_2: 1}
+    assert sut(doc_1, hit_row) == 8.0
+
+
+def test__frequency__record_not_present():
+    sut = Frequency()
+    hit_row = {doc_1: 8, doc_2: 1}
+    assert sut(doc_3, hit_row) == 0.0
+
+
+def test__frequency__empty_hit_row():
+    sut = Frequency()
+    hit_row = {}
+    assert sut(doc_3, hit_row) == 0.0
+
+
 def test__log_frequency__record_present():
-    assert log_frequency(doc_1, query_hit_rows[query_1]) == 3.0
+    sut = LogFrequency(base=2, scale=1.0)
+    hit_row = {doc_1: 8, doc_2: 1}
+    assert sut(doc_1, hit_row) == 3.0
+
+
+def test__log_frequency__base_10():
+    sut = LogFrequency(base=10, scale=1.0)
+    hit_row = {doc_1: 10, doc_2: 1}
+    assert sut(doc_1, hit_row) == 1.0
 
 
 def test__log_frequency__record_not_present():
-    assert log_frequency(ukn_doc, query_hit_rows[query_1]) == 0.0
+    sut = LogFrequency(base=2, scale=1.0)
+    hit_row = {doc_1: 8, doc_2: 1}
+    assert sut(doc_3, hit_row) == 0.0
 
 
 def test__log_frequency__weight_is_zero():
-    assert log_frequency(doc_1, {doc_1: 0.0, doc_2: 0.0}) == 0.0
+    sut = LogFrequency(base=2, scale=1.0)
+    hit_row = {doc_1: 0.0, doc_2: 1.0}
+    assert sut(doc_1, hit_row) == 0.0
 
 
 def test__log_frequency__weight_is_negative():
-    assert log_frequency(doc_1, {doc_1: -1.0, doc_2: 0.0}) == 0.0
+    sut = LogFrequency(base=2, scale=1.0)
+    hit_row = {doc_1: -1.0, doc_2: 1.0}
+    assert sut(doc_1, hit_row) == 0.0
+
+
+def test__log_frequency__scale_is_negative():
+    sut = LogFrequency(base=2, scale=-1.0)
+    hit_row = {doc_1: 1.0, doc_2: 1.0}
+    assert sut(doc_1, hit_row) == 0.0
 
 
 def test__log_frequency__total_hit_row_is_empty():
-    assert log_frequency(doc_1, {}) == 0.0
+    sut = LogFrequency(base=2, scale=-1.0)
+    hit_row = {}
+    assert sut(doc_1, hit_row) == 0.0
 
 
 def test__weighted_scorer():

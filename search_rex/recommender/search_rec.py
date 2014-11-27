@@ -67,13 +67,31 @@ def relevance(record_id, query_hits):
     return float(query_hits[record_id]) / total_hits
 
 
-def log_frequency(record_id, query_hits):
+class LogFrequency:
     """
-    Returns the logarithm of the number of hits
+    Calculates the log of the number of hits
+
+    Useful for a smoothed popularity metric
     """
-    if record_id not in query_hits or query_hits[record_id] <= 0.0:
-        return 0.0
-    return math.log(query_hits[record_id], 2)
+    def __init__(self, base=10, scale=1.0):
+        self.base = base
+        self.scale = scale
+
+    def __call__(self, record_id, query_hits):
+        if record_id not in query_hits:
+            return 0.0
+        weight = self.scale * query_hits[record_id]
+        return math.log(weight, self.base) if weight > 0.0 else 0.0
+
+
+class Frequency:
+    """
+    Returns the number of hits
+    """
+    def __call__(self, record_id, query_hits):
+        if record_id not in query_hits:
+            return 0.0
+        return query_hits[record_id]
 
 
 class Scorer(object):

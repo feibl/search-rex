@@ -4,7 +4,7 @@ from search_rex.recommender.models import Community
 from search_rex.recommender.data_model import PersistentDataModel
 from search_rex.core import db
 from search_rex.recommender.search_rec import GenericSearchResultRecommender
-from search_rex.recommender.search_rec import WeightedScorer
+from search_rex.recommender.search_rec import WeightedSumScorer
 from search_rex.recommender.search_rec import Frequency
 from search_rex.recommender.query_sim import QuerySimilarity
 from search_rex.recommender.query_nhood import ThresholdQueryNeighbourhood
@@ -119,7 +119,7 @@ def create_rec_system(data_model):
         data_model=d_model,
         query_sim=q_sim,
         query_nhood=q_nhood,
-        scorer=WeightedScorer(Frequency()))
+        scorer=WeightedSumScorer(Frequency()))
 
 
 class RecommendationTestCase(BaseTestCase):
@@ -193,7 +193,7 @@ class RecommendationTestCase(BaseTestCase):
 
         assert recs[0].record_id == record_caesar
         assert recs[1].record_id == record_cleopatra
-        assert recs[2].record_id == record_asterix
-        assert recs[3].record_id == record_brutus
+        assert recs[2].record_id == record_brutus
+        assert recs[3].record_id == record_asterix
         assert recs[4].record_id == record_gallia
         assert recs[5].record_id == record_caesar_salad

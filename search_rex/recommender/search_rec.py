@@ -100,6 +100,26 @@ class Scorer(object):
         raise NotImplementedError()
 
 
+class WeightedSumScorer(Scorer):
+    """
+    Sums the scores weighted by the query similarities
+    """
+
+    def __init__(self, score_function=relevance):
+        self.score_function = score_function
+
+    def compute_score(self, record_id, hit_rows, query_sims):
+        assert len(hit_rows) == len(query_sims)
+        total_score = 0.0
+        for query_string, nbor_hit_row in hit_rows.iteritems():
+            if record_id not in nbor_hit_row:
+                continue
+            sim = query_sims[query_string]
+            score = self.score_function(record_id, nbor_hit_row)
+            total_score += sim * score
+        return total_score
+
+
 class WeightedScorer(Scorer):
     """
     Computes the weighted average score using the query similarities

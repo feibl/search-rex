@@ -2,6 +2,7 @@ from search_rex.recommender.search_rec import relevance
 from search_rex.recommender.search_rec import LogFrequency
 from search_rex.recommender.search_rec import Frequency
 from search_rex.recommender.search_rec import WeightedScorer
+from search_rex.recommender.search_rec import WeightedSumScorer
 from ..test_util import assert_almost_equal
 
 from collections import namedtuple
@@ -138,6 +139,32 @@ def test__weighted_scorer__sims_are_zero():
 
 def test__weighted_scorer__no_record():
     sut = WeightedScorer(lambda record, hit_row: 1.0)
+
+    score = sut.compute_score(ukn_doc, query_hit_rows, query_sims)
+    assert score == 0.0
+
+
+def test__weighted_sum_scorer():
+    sut = WeightedSumScorer(lambda record, hit_row: 1.0)
+
+    score = sut.compute_score(doc_1, query_hit_rows, query_sims)
+    assert_almost_equal(score, 1.0, 0.00001)
+
+
+def test__weighted_sum_scorer__sims_are_zero():
+    sut = WeightedSumScorer(lambda record, hit_row: 1.0)
+    query_sims = {
+        query_1: 0.0,
+        query_2: 0.0,
+        query_3: 0.0,
+    }
+
+    score = sut.compute_score(doc_1, query_hit_rows, query_sims)
+    assert score == 0.0
+
+
+def test__weighted_sum_scorer__no_record():
+    sut = WeightedSumScorer(lambda record, hit_row: 1.0)
 
     score = sut.compute_score(ukn_doc, query_hit_rows, query_sims)
     assert score == 0.0

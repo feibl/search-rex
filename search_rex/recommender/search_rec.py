@@ -167,10 +167,10 @@ class GenericSearchResultRecommender(SearchResultRecommender):
         records = set()
         hit_rows = {}
         hit_value_rows = {}
-        for query_string, hit_row in hit_row_iter:
+        for nbour, hit_row in hit_row_iter:
             records.update(hit_row.keys())
-            hit_rows[query_string] = hit_row
-            hit_value_rows[query_string] =\
+            hit_rows[nbour] = hit_row
+            hit_value_rows[nbour] =\
                 {record: hit.decayed_hits for record, hit in hit_row.items()}
 
         recs = {}

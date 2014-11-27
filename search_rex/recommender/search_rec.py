@@ -212,31 +212,28 @@ class GenericSearchResultRecommender(SearchResultRecommender):
                 {record: hit.decayed_hits for record, hit in hit_row.items()}
 
         recs = {}
-        rel_scores = {}
         for record in records:
-            record_hits = []
-            for q_string, hit_row in hit_rows.iteritems():
-                if record in hit_row:
-                    record_hits.append(hit_row[record])
-
             score = self.scorer.compute_score(
                 record, hit_value_rows, nbour_sims)
-            rel_scores[record] = score
 
             rec = Recommendation(record)
             rec.score = score
-            rec.related_queries = []
-            for record_hit in record_hits:
-                q_details = QueryDetails(record_hit.query_string)
-                q_details.decayed_hits = record_hit.decayed_hits
-                q_details.total_hits = record_hit.total_hits
-                q_details.target_last_interaction =\
-                    record_hit.last_interaction
 
-                if record_hit.query_string == query_string:
-                    rec.current_query = q_details
-                else:
-                    rec.related_queries.append(q_details)
+            rec.related_queries = []
+            for _, hit_row in hit_rows.iteritems():
+                if record in hit_row:
+                    record_hit = hit_row[record]
+
+                    q_details = QueryDetails(record_hit.query_string)
+                    q_details.decayed_hits = record_hit.decayed_hits
+                    q_details.total_hits = record_hit.total_hits
+                    q_details.target_last_interaction =\
+                        record_hit.last_interaction
+
+                    if record_hit.query_string == query_string:
+                        rec.current_query = q_details
+                    else:
+                        rec.related_queries.append(q_details)
 
             recs[record] = rec
 

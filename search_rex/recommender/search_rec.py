@@ -240,5 +240,7 @@ class GenericSearchResultRecommender(SearchResultRecommender):
 
             recs[record] = rec
 
-        return sorted(
+        sorted_recs = sorted(
             recs.values(), key=lambda rec: rec.score, reverse=True)
+
+        return sorted_recs[:max_results]

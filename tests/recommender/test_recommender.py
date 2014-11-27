@@ -186,7 +186,7 @@ class RecommendationTestCase(BaseTestCase):
 
         assert len(recs) == 6
 
-    def test__recommend__query_caesar__recs_order(self):
+    def test__recommend__query_caesar__recs_ordered_by_score(self):
         recs = self.sut.recommend(
             query_string=query_caesar,
             community_id=TEST_COMMUNITY)
@@ -197,3 +197,11 @@ class RecommendationTestCase(BaseTestCase):
         assert recs[3].record_id == record_asterix
         assert recs[4].record_id == record_gallia
         assert recs[5].record_id == record_caesar_salad
+
+    def test__recommend__max_records__recommendations_are_limitted(self):
+        recs = self.sut.recommend(
+            query_string=query_caesar,
+            community_id=TEST_COMMUNITY,
+            max_results=3)
+
+        assert len(recs) == 3

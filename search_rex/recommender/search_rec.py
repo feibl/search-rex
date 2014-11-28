@@ -40,6 +40,8 @@ class Recommendation(object):
         self.current_query = None
         # Related queries that generated a hit on this record
         self.related_queries = None
+        self.last_interaction = None
+        self.total_hits = None
 
     def serialize(self):
         return {
@@ -48,10 +50,12 @@ class Recommendation(object):
             'current_query':
                 self.current_query.serialize()
                 if self.current_query else None,
-            'self.related_queries':
+            'related_queries':
                 [
                     query.serialize() for query in self.related_queries
-                ]
+                ],
+            'total_hits': self.total_hits,
+            'last_interaction': self.last_interaction,
         }
 
 
@@ -220,6 +224,8 @@ class GenericSearchResultRecommender(SearchResultRecommender):
             rec.score = score
 
             rec.related_queries = []
+            total_hits = 0
+            last_interaction = None
             for _, hit_row in hit_rows.iteritems():
                 if record in hit_row:
                     record_hit = hit_row[record]
@@ -230,6 +236,11 @@ class GenericSearchResultRecommender(SearchResultRecommender):
                     q_details.target_last_interaction =\
                         record_hit.last_interaction
 
+                    total_hits += q_details.total_hits
+                    if last_interaction is None\
+                            or record_hit.last_interaction > last_interaction:
+                        last_interaction = record_hit.last_interaction
+
                     if record_hit.query_string == query_string:
                         rec.current_query = q_details
                     else:
@@ -238,6 +249,8 @@ class GenericSearchResultRecommender(SearchResultRecommender):
             rec.related_queries = sorted(
                 rec.related_queries, key=lambda q: q.decayed_hits,
                 reverse=True)
+            rec.last_interaction = last_interaction
+            rec.total_hits = total_hits
 
             recs[record] = rec
 

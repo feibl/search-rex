@@ -9,6 +9,7 @@ class Config(object):
     TESTING = False
     SQLALCHEMY_DATABASE_URI =\
         'postgresql://postgres:postgres@localhost/search_rex'
+    API_KEY = '8ab9dc3f'
 
 
 class ProductionConfig(Config):

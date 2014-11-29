@@ -2,16 +2,21 @@ from ..test_base import BaseTestCase
 from search_rex.core import db
 from search_rex.recommender.data_model import PersistentDataModel
 from search_rex.recommender.models import Community
+from datetime import datetime
+from json import loads
 
 
 TEST_COMMUNITY = 'test_community'
 
 
-def assert_404(response):
-    """
-    Checks if a HTTP 404 returned
-    """
-    assert response.status_code == 404
+URL = '/api/'
+
+
+def create_request(route, parameters):
+    return '{}?{}'.format(
+        route,
+        '&'.join(['{}={}'.format(k, v) for k, v in parameters.items()])
+    )
 
 
 class TestParameters(BaseTestCase):
@@ -28,28 +33,50 @@ class TestParameters(BaseTestCase):
         self.data_model = PersistentDataModel()
         self.create_community(TEST_COMMUNITY)
 
+    def test__view__wrong_time_format(self):
+        parameters = dict(
+            community_id=TEST_COMMUNITY,
+            record_id='Secret document',
+            query_string='hello world',
+            session_id=5556,
+            timestamp=datetime(1999, 12, 24),
+            api_key=self.app.config['API_KEY']
+        )
+        response = self.client.get(
+            create_request(URL + 'view', parameters))
 
-def create_throws_404_test(view_to_test, parameters):
+        assert response.status_code == 400
+        assert loads(response.data)['message'] ==\
+            'Parameter timestamp could not be parsed'
+
+
+def create_throws_400_test(view_to_test, parameters, leave_out_pm):
+
     def do_test_expected(self):
-        pms_to_use = {k: v for k, v in parameters.items()}
+        pms_to_use = {}
+        for parameter in parameters.keys():
+            if parameter == leave_out_pm:
+                continue
+            pms_to_use[parameter] = parameters[parameter]
         pms_to_use['api_key'] = self.app.config['API_KEY']
-        response = self.client.get(view_to_test, data=pms_to_use)
-        assert_404(response)
+
+        response = self.client.get(
+            create_request(URL + view_to_test, pms_to_use))
+        assert response.status_code == 400
+        assert loads(response.data)['message'] ==\
+            'Missing required parameter {}'.format(leave_out_pm)
     return do_test_expected
 
 
 def create_required_pms_tests(view, req_parameters):
     for leave_out_parameter in req_parameters.keys():
-        pms_to_use = {}
-        for parameter in req_parameters.keys():
-            if parameter == leave_out_parameter:
-                continue
-            pms_to_use[parameter] = req_parameters[parameter]
 
-            test_method = create_throws_404_test('/view', pms_to_use)
-            test_method.__name__ = 'test___{}_omitting_{}__throws_404'\
-                .format(view, leave_out_parameter)
-            setattr(TestParameters, test_method.__name__, test_method)
+        test_method = create_throws_400_test(
+            view, req_parameters,
+            leave_out_parameter)
+        test_method.__name__ = 'test___{}_omitting_{}__throws_404'\
+            .format(view, leave_out_parameter)
+        setattr(TestParameters, test_method.__name__, test_method)
 
 
 view_parameters = dict(
@@ -57,7 +84,7 @@ view_parameters = dict(
     record_id='Secret document',
     query_string='hello world',
     session_id=5556,
-    timestamp=1234555,
+    timestamp=datetime(1999, 12, 24).isoformat(),
 )
 
 recommend_parameters = dict(
@@ -70,9 +97,9 @@ similar_q_parameters = dict(
     query_string='hello world',
 )
 
-create_required_pms_tests('/api/view', view_parameters)
-create_required_pms_tests('/api/recommend', recommend_parameters)
-create_required_pms_tests('/api/similar_queries', similar_q_parameters)
+create_required_pms_tests('view', view_parameters)
+create_required_pms_tests('recommend', recommend_parameters)
+create_required_pms_tests('similar_queries', similar_q_parameters)
 
 
 def create_wrong_api_key_test(view_to_test, parameters):
@@ -81,13 +108,14 @@ def create_wrong_api_key_test(view_to_test, parameters):
 
     def wrong_api_key_test(self):
         print(pms_to_use)
-        response = self.client.get(view_to_test, data=pms_to_use)
+        response = self.client.get(
+            create_request(URL + view_to_test, pms_to_use))
         assert response.status_code == 403
 
     wrong_api_key_test.__name__ = 'test__{}__wrong_api_key__throws_403'\
         .format(view_to_test)
     setattr(TestParameters, wrong_api_key_test.__name__, wrong_api_key_test)
 
-create_wrong_api_key_test('/api/view', view_parameters)
-create_wrong_api_key_test('/api/recommend', recommend_parameters)
-create_wrong_api_key_test('/api/similar_queries', similar_q_parameters)
+create_wrong_api_key_test('view', view_parameters)
+create_wrong_api_key_test('recommend', recommend_parameters)
+create_wrong_api_key_test('similar_queries', similar_q_parameters)

@@ -86,6 +86,11 @@ action_parameters = dict(
     timestamp=datetime(1999, 12, 24).isoformat(),
 )
 
+inspired_parameters = dict(
+    include_internal_records=True,
+    session_id=5556,
+)
+
 recommend_parameters = dict(
     community_id=TEST_COMMUNITY,
     query_string='hello world',
@@ -98,6 +103,8 @@ similar_q_parameters = dict(
 
 create_required_pms_tests('view', action_parameters)
 create_required_pms_tests('copy', action_parameters)
+create_required_pms_tests('inspired_by_your_view_history', inspired_parameters)
+create_required_pms_tests('inspired_by_your_copy_history', inspired_parameters)
 create_required_pms_tests('recommend', recommend_parameters)
 create_required_pms_tests('similar_queries', similar_q_parameters)
 

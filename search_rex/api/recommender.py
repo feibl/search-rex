@@ -85,6 +85,28 @@ def copy():
     return jsonify(success=True)
 
 
+@rec_api.route('/api/inspired_by_your_view_history', methods=['GET'])
+@api_key_required
+def inspired_by_your_view_history():
+    include_internal_records = parse_arg(
+        request, 'include_internal_records', required=True, type=bool)
+    session_id = parse_arg(request, 'session_id', required=True)
+    max_num_recs = parse_arg(
+        request, 'max_num_recs', required=False, type=int)
+    return jsonify(results=[])
+
+
+@rec_api.route('/api/inspired_by_your_copy_history', methods=['GET'])
+@api_key_required
+def inspired_by_your_copy_history():
+    include_internal_records = parse_arg(
+        request, 'include_internal_records', required=True, type=bool)
+    session_id = parse_arg(request, 'session_id', required=True)
+    max_num_recs = parse_arg(
+        request, 'max_num_recs', required=False, type=int)
+    return jsonify(results=[])
+
+
 @rec_api.route('/api/similar_queries', methods=['GET'])
 @api_key_required
 def similar_queries():

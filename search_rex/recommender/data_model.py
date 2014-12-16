@@ -1,15 +1,24 @@
-from models import CommunityQuery
 from models import Record
-from models import ResultClick
+from models import Action
 from models import SearchQuery
 from models import SearchSession
 
+import logging
+
 from sqlalchemy import func
+from sqlalchemy.orm.exc import NoResultFound
 from itertools import groupby
 
 from ..db_helper import get_one_or_create
 
 from ..core import db
+
+
+logger = logging.getLogger(__name__)
+
+
+class CommunityNotDefinedException(Exception):
+    pass
 
 
 class DataModel(object):
@@ -47,12 +56,23 @@ class PersistentDataModel(DataModel):
         self.half_life = half_life
         self.life_span = life_span
 
+    def is_community_present(self, session, community_id):
+        try:
+            return session.query(Community)\
+                .filter_by(community_id=community_id).one()
+        except NoResultFound:
+            msg = 'Community named {} is not present'.format(community_id)
+            logger.error(msg)
+            raise CommunityNotDefinedException(msg)
+
     def register_hit(
             self, query_string, community_id, record_id, t_stamp, session_id):
         '''Stores a click on a search result recorded during the given
         session'''
 
         session = db.session
+
+        self.is_community_present(session, community_id)
 
         result_click = ResultClick.query.filter_by(
             session_id=session_id, record_id=record_id,
@@ -88,8 +108,11 @@ class PersistentDataModel(DataModel):
     def get_queries(self, community_id):
         '''Returns an iterator over all the queries committed by the
         community'''
+        session = db.session
+        self.is_community_present(session, community_id)
+
         query = (
-            db.session.query(CommunityQuery.query_string)
+            session.query(CommunityQuery.query_string)
             .filter(CommunityQuery.community_id == community_id)
         )
 
@@ -103,8 +126,11 @@ class PersistentDataModel(DataModel):
         To this belongs the query, record, record popularity, last interaction,
         overall hits and the adjusted hits
         """
+        session = db.session
+        self.is_community_present(session, community_id)
+
         query = (
-            db.session.query(
+            session.query(
                 ResultClick.query_string,
                 ResultClick.record_id,
                 func.count().label('total_hits'),

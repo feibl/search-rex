@@ -25,17 +25,11 @@ class DataModel(object):
     '''This class stores the information about the queries and clicks committed
     by the different communities as well as the records'''
 
-    def report_view(
-            self, record_id, session_id, timestamp, query_string=None):
+    def report_action(
+            self, record_id, is_internal_record, session_id,
+            timestamp, query_string=None):
         """
-        Stores view action of a record
-        """
-        raise NotImplementedError()
-
-    def report_copy(
-            self, record_id, session_id, timestamp, query_string=None):
-        """
-        Stores copy action of a record
+        Stores an action directed to a record
         """
         raise NotImplementedError()
 
@@ -60,55 +54,49 @@ class DataModel(object):
 class PersistentDataModel(DataModel):
     '''Stores the DataModel in a Database'''
 
-    def __init__(self, half_life=600, life_span=1200):
+    def __init__(
+            self, action_type, include_internal_records,
+            half_life=600, life_span=1200):
+        self.action_type = action_type
+        self.include_internal_records = include_internal_records
         self.half_life = half_life
         self.life_span = life_span
 
-    def is_community_present(self, session, community_id):
-        try:
-            return session.query(Community)\
-                .filter_by(community_id=community_id).one()
-        except NoResultFound:
-            msg = 'Community named {} is not present'.format(community_id)
-            logger.error(msg)
-            raise CommunityNotDefinedException(msg)
-
-    def register_hit(
-            self, query_string, community_id, record_id, t_stamp, session_id):
-        '''Stores a click on a search result recorded during the given
-        session'''
+    def report_action(
+            self, record_id, is_internal_record, session_id,
+            timestamp, query_string=None):
+        """
+        Stores an action directed to a record
+        """
 
         session = db.session
 
-        self.is_community_present(session, community_id)
-
-        result_click = ResultClick.query.filter_by(
+        action = Action.query.filter_by(
             session_id=session_id, record_id=record_id,
-            community_id=community_id, query_string=query_string
+            action_type=self.action_type
         ).first()
 
         # Register the same click only once per session
-        if result_click is not None:
+        if action is not None:
             return True
 
         get_one_or_create(
-            session, Record, record_id=record_id)
-        get_one_or_create(
-            session, SearchQuery, query_string=query_string)
-        get_one_or_create(
-            session, CommunityQuery, query_string=query_string,
-            community_id=community_id)
+            session, Record, record_id=record_id,
+            create_kwargs={'is_internal': is_internal_record})
+        if query_string:
+            get_one_or_create(
+                session, SearchQuery, query_string=query_string)
         get_one_or_create(
             session, SearchSession, session_id=session_id,
-            create_kwargs={'time_created': t_stamp})
+            create_kwargs={'time_created': timestamp})
 
-        result_click = ResultClick(
-            session_id=session_id, time_created=t_stamp,
-            community_id=community_id, query_string=query_string,
+        action = Action(
+            session_id=session_id, time_created=timestamp,
+            query_string=query_string, action_type=self.action_type,
             record_id=record_id
         )
 
-        session.add(result_click)
+        session.add(action)
 
         session.commit()
         return True

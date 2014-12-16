@@ -52,6 +52,10 @@ def parse_arg(
 @rec_api.route('/api/view', methods=['GET'])
 @api_key_required
 def view():
+    """
+    Reports that a view action occurred during a session
+    """
+
     is_internal_record = parse_arg(
         request, 'is_internal_record', required=True, type=bool)
     record_id = parse_arg(request, 'record_id', required=True)
@@ -70,6 +74,10 @@ def view():
 @rec_api.route('/api/copy', methods=['GET'])
 @api_key_required
 def copy():
+    """
+    Reports that a copy action occurred during a session
+    """
+
     is_internal_record = parse_arg(
         request, 'is_internal_record', required=True, type=bool)
     record_id = parse_arg(request, 'record_id', required=True)
@@ -88,6 +96,10 @@ def copy():
 @rec_api.route('/api/inspired_by_your_view_history', methods=['GET'])
 @api_key_required
 def inspired_by_your_view_history():
+    """
+    Gets a list of recommended records based on a session's history of views
+    """
+
     include_internal_records = parse_arg(
         request, 'include_internal_records', required=True, type=bool)
     session_id = parse_arg(request, 'session_id', required=True)
@@ -99,6 +111,10 @@ def inspired_by_your_view_history():
 @rec_api.route('/api/inspired_by_your_copy_history', methods=['GET'])
 @api_key_required
 def inspired_by_your_copy_history():
+    """
+    Gets a list of recommended records based on a session's history of copies
+    """
+
     include_internal_records = parse_arg(
         request, 'include_internal_records', required=True, type=bool)
     session_id = parse_arg(request, 'session_id', required=True)
@@ -110,6 +126,10 @@ def inspired_by_your_copy_history():
 @rec_api.route('/api/other_users_also_viewed', methods=['GET'])
 @api_key_required
 def other_users_also_viewed():
+    """
+    Returns a list of records that were viewed together with the given one
+    """
+
     include_internal_records = parse_arg(
         request, 'include_internal_records', required=True, type=bool)
     record_id = parse_arg(request, 'record_id', required=True)
@@ -121,6 +141,10 @@ def other_users_also_viewed():
 @rec_api.route('/api/other_users_also_copied', methods=['GET'])
 @api_key_required
 def other_users_also_copied():
+    """
+    Returns a list of records that were copied together with the given one
+    """
+
     include_internal_records = parse_arg(
         request, 'include_internal_records', required=True, type=bool)
     record_id = parse_arg(request, 'record_id', required=True)
@@ -132,6 +156,10 @@ def other_users_also_copied():
 @rec_api.route('/api/viewed_results_for_query', methods=['GET'])
 @api_key_required
 def viewed_results_for_query():
+    """
+    Returns a list of records that were viewed after entering the query
+    """
+
     include_internal_records = parse_arg(
         request, 'include_internal_records', required=True, type=bool)
     query_string = parse_arg(request, 'query_string', required=True)
@@ -143,6 +171,10 @@ def viewed_results_for_query():
 @rec_api.route('/api/copied_results_for_query', methods=['GET'])
 @api_key_required
 def copied_results_for_query():
+    """
+    Returns a list of records that were copied after entering the query
+    """
+
     include_internal_records = parse_arg(
         request, 'include_internal_records', required=True, type=bool)
     query_string = parse_arg(request, 'query_string', required=True)
@@ -154,7 +186,10 @@ def copied_results_for_query():
 @rec_api.route('/api/similar_queries', methods=['GET'])
 @api_key_required
 def similar_queries():
-    '''Returns a list of queries which are similar to the target query'''
+    """
+    Returns a list of queries which are similar to the target query
+    """
+
     query_string = parse_arg(request, 'query_string', required=True)
     community_id = 3
     similar_queries = rec_service.get_similar_queries(
@@ -168,7 +203,10 @@ def similar_queries():
 @rec_api.route('/api/set_record_active', methods=['GET'])
 @api_key_required
 def set_record_active():
-    '''Returns a list of queries which are similar to the target query'''
+    """
+    Sets a record active or inactive. Inactive records will not be recommended.
+    """
+
     record_id = parse_arg(request, 'record_id', required=True)
     active = parse_arg(request, 'active', required=True, type=bool)
 
@@ -178,7 +216,10 @@ def set_record_active():
 @rec_api.route('/api/import_record_similarity', methods=['GET'])
 @api_key_required
 def import_record_similarity():
-    '''Returns a list of queries which are similar to the target query'''
+    """
+    Imports a similarity value of two records
+    """
+
     from_record_id = parse_arg(request, 'from_record_id', required=True)
     to_record_id = parse_arg(request, 'to_record_id', required=True)
     from_is_internal = parse_arg(

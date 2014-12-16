@@ -6,10 +6,25 @@ from flask import current_app
 from flask.ext.restful.inputs import datetime_from_iso8601
 from functools import wraps
 
-from ..services import rec_service
+from ..services import internal_view_action_recommender
+from ..services import external_view_action_recommender
+from ..services import external_copy_action_recommender
+from ..services import internal_copy_action_recommender
 
 
 rec_api = Blueprint('rec_api', __name__)
+
+
+def get_view_action_recommender(include_internal_records):
+    if include_internal_records:
+        return internal_view_action_recommender
+    return external_view_action_recommender
+
+
+def get_copy_action_recommender(include_internal_records):
+    if include_internal_records:
+        return internal_copy_action_recommender
+    return external_copy_action_recommender
 
 
 def api_key_required(view_function):
@@ -63,10 +78,10 @@ def view():
     timestamp = parse_arg(
         request, 'timestamp', required=True, type=datetime_from_iso8601)
     query_string = parse_arg(request, 'query_string', required=False)
-    community_id = 3
-    rec_service.register_hit(
-        query_string=query_string, community_id=community_id,
-        record_id=record_id, t_stamp=timestamp, session_id=session_id)
+
+    internal_view_action_recommender.report_action(
+        query_string=query_string, record_id=record_id, timestamp=timestamp,
+        session_id=session_id, is_internal_record=is_internal_record)
 
     return jsonify(success=True)
 
@@ -85,10 +100,10 @@ def copy():
     timestamp = parse_arg(
         request, 'timestamp', required=True, type=datetime_from_iso8601)
     query_string = parse_arg(request, 'query_string', required=False)
-    community_id = 3
-    rec_service.register_hit(
-        query_string=query_string, community_id=community_id,
-        record_id=record_id, t_stamp=timestamp, session_id=session_id)
+
+    internal_copy_action_recommender.report_action(
+        query_string=query_string, record_id=record_id, timestamp=timestamp,
+        session_id=session_id, is_internal_record=is_internal_record)
 
     return jsonify(success=True)
 
@@ -105,7 +120,12 @@ def inspired_by_your_view_history():
     session_id = parse_arg(request, 'session_id', required=True)
     max_num_recs = parse_arg(
         request, 'max_num_recs', required=False, type=int)
-    return jsonify(results=[])
+
+    recommender = get_view_action_recommender(include_internal_records)
+    recs = recommender.recommend_from_history(
+        session_id=session_id, max_num_recs=max_num_recs)
+
+    return jsonify(results=[rec.serialize() for rec in recs])
 
 
 @rec_api.route('/api/inspired_by_your_copy_history', methods=['GET'])
@@ -120,7 +140,12 @@ def inspired_by_your_copy_history():
     session_id = parse_arg(request, 'session_id', required=True)
     max_num_recs = parse_arg(
         request, 'max_num_recs', required=False, type=int)
-    return jsonify(results=[])
+
+    recommender = get_copy_action_recommender(include_internal_records)
+    recs = recommender.recommend_from_history(
+        session_id=session_id, max_num_recs=max_num_recs)
+
+    return jsonify(results=[rec.serialize() for rec in recs])
 
 
 @rec_api.route('/api/other_users_also_viewed', methods=['GET'])
@@ -135,7 +160,12 @@ def other_users_also_viewed():
     record_id = parse_arg(request, 'record_id', required=True)
     max_num_recs = parse_arg(
         request, 'max_num_recs', required=False, type=int)
-    return jsonify(results=[])
+
+    recommender = get_view_action_recommender(include_internal_records)
+    recs = recommender.recommend_similar_records(
+        record_id, max_num_recs=max_num_recs)
+
+    return jsonify(results=[rec.serialize() for rec in recs])
 
 
 @rec_api.route('/api/other_users_also_copied', methods=['GET'])
@@ -150,7 +180,12 @@ def other_users_also_copied():
     record_id = parse_arg(request, 'record_id', required=True)
     max_num_recs = parse_arg(
         request, 'max_num_recs', required=False, type=int)
-    return jsonify(results=[])
+
+    recommender = get_copy_action_recommender(include_internal_records)
+    recs = recommender.recommend_similar_records(
+        record_id, max_num_recs=max_num_recs)
+
+    return jsonify(results=[rec.serialize() for rec in recs])
 
 
 @rec_api.route('/api/viewed_results_for_query', methods=['GET'])
@@ -165,7 +200,12 @@ def viewed_results_for_query():
     query_string = parse_arg(request, 'query_string', required=True)
     max_num_recs = parse_arg(
         request, 'max_num_recs', required=False, type=int)
-    return jsonify(results=[])
+
+    recommender = get_view_action_recommender(include_internal_records)
+    recs = recommender.recommend_search_results(
+        query_string, max_num_recs=max_num_recs)
+
+    return jsonify(results=[rec.serialize() for rec in recs])
 
 
 @rec_api.route('/api/copied_results_for_query', methods=['GET'])
@@ -180,7 +220,12 @@ def copied_results_for_query():
     query_string = parse_arg(request, 'query_string', required=True)
     max_num_recs = parse_arg(
         request, 'max_num_recs', required=False, type=int)
-    return jsonify(results=[])
+
+    recommender = get_copy_action_recommender(include_internal_records)
+    recs = recommender.recommend_search_results(
+        query_string, max_num_recs=max_num_recs)
+
+    return jsonify(results=[rec.serialize() for rec in recs])
 
 
 @rec_api.route('/api/similar_queries', methods=['GET'])
@@ -192,7 +237,7 @@ def similar_queries():
 
     query_string = parse_arg(request, 'query_string', required=True)
     community_id = 3
-    similar_queries = rec_service.get_similar_queries(
+    similar_queries = internal_view_action_recommender.get_similar_queries(
         query_string, community_id)
 
     return jsonify(

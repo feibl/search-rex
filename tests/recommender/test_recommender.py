@@ -179,7 +179,7 @@ class RecommendationTestCase(BaseTestCase):
     def test__recommend__max_records__recommendations_are_limitted(self):
         recs = self.sut.recommend_search_results(
             query_string=query_caesar,
-            max_results=3)
+            max_num_recs=3)
 
         assert len(recs) == 3
         assert recs[0].record_id == record_caesar

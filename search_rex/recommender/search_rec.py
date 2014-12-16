@@ -152,7 +152,7 @@ class Recommender(object):
     '''Recommender System for search results based on queries committed by
     members of a community'''
 
-    def recommend_search_results(self, query_string, n=None):
+    def recommend_search_results(self, query_string, max_num_recs=10):
         """
         Returns a list of n records that were relevant to other users
         when committing the same or a similar query
@@ -167,7 +167,7 @@ class Recommender(object):
         """
         raise NotImplementedError()
 
-    def get_similar_queries(self, query_string):
+    def get_similar_queries(self, query_string, max_num_recs=10):
         '''Gets similar queries that were committed by the given community
         '''
         raise NotImplementedError()
@@ -194,10 +194,10 @@ class GenericRecommender(Recommender):
             timestamp=timestamp, session_id=session_id,
             is_internal_record=is_internal_record)
 
-    def get_similar_queries(self, query_string, max_results=10):
+    def get_similar_queries(self, query_string, max_num_recs=10):
         return self.query_nhood.get_neighbourhood(query_string)
 
-    def recommend_search_results(self, query_string, max_results=10):
+    def recommend_search_results(self, query_string, max_num_recs=10):
         nbours = [
             nbour for nbour
             in self.get_similar_queries(query_string)
@@ -262,4 +262,4 @@ class GenericRecommender(Recommender):
         sorted_recs = sorted(
             recs.values(), key=lambda rec: rec.score, reverse=True)
 
-        return sorted_recs[:max_results]
+        return sorted_recs[:max_num_recs]

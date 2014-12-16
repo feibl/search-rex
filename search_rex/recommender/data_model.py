@@ -25,10 +25,18 @@ class DataModel(object):
     '''This class stores the information about the queries and clicks committed
     by the different communities as well as the records'''
 
-    def register_hit(
-            self, query_string, community_id, record_id, t_stamp, session_id):
-        '''Stores a click on a search result recorded during the given
-        session'''
+    def report_view(
+            self, record_id, session_id, timestamp, query_string=None):
+        """
+        Stores view action of a record
+        """
+        raise NotImplementedError()
+
+    def report_copy(
+            self, record_id, session_id, timestamp, query_string=None):
+        """
+        Stores copy action of a record
+        """
         raise NotImplementedError()
 
     def get_hits_for_queries(self, query_strings, community_id):

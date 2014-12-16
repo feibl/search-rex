@@ -76,6 +76,11 @@ class Record(db.Model):
         db.Boolean(), default=True, nullable=False)
 
 
+class ActionType(object):
+    view = 'view'
+    copy = 'copy'
+
+
 class Action(db.Model):
     __tablename__ = 'action'
 
@@ -88,7 +93,7 @@ class Action(db.Model):
         index=True, nullable=False, primary_key=True)
 
     action_type = db.Column(
-        db.Enum("view", "copy", name="action_types"),
+        db.Enum(ActionType.view, ActionType.copy, name="action_types"),
         index=True, nullable=False, primary_key=True)
 
     query_string = db.Column(

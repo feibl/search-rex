@@ -129,6 +129,28 @@ def other_users_also_copied():
     return jsonify(results=[])
 
 
+@rec_api.route('/api/viewed_results_for_query', methods=['GET'])
+@api_key_required
+def viewed_results_for_query():
+    include_internal_records = parse_arg(
+        request, 'include_internal_records', required=True, type=bool)
+    query_string = parse_arg(request, 'query_string', required=True)
+    max_num_recs = parse_arg(
+        request, 'max_num_recs', required=False, type=int)
+    return jsonify(results=[])
+
+
+@rec_api.route('/api/copied_results_for_query', methods=['GET'])
+@api_key_required
+def copied_results_for_query():
+    include_internal_records = parse_arg(
+        request, 'include_internal_records', required=True, type=bool)
+    query_string = parse_arg(request, 'query_string', required=True)
+    max_num_recs = parse_arg(
+        request, 'max_num_recs', required=False, type=int)
+    return jsonify(results=[])
+
+
 @rec_api.route('/api/similar_queries', methods=['GET'])
 @api_key_required
 def similar_queries():

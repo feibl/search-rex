@@ -96,6 +96,11 @@ others_parameters = dict(
     record_id='Secret document',
 )
 
+search_parameters = dict(
+    include_internal_records=True,
+    query_string='hello world',
+)
+
 recommend_parameters = dict(
     community_id=TEST_COMMUNITY,
     query_string='hello world',
@@ -112,6 +117,8 @@ create_required_pms_tests('inspired_by_your_view_history', inspired_parameters)
 create_required_pms_tests('inspired_by_your_copy_history', inspired_parameters)
 create_required_pms_tests('other_users_also_viewed', others_parameters)
 create_required_pms_tests('other_users_also_copied', others_parameters)
+create_required_pms_tests('viewed_results_for_query', search_parameters)
+create_required_pms_tests('copied_results_for_query', search_parameters)
 create_required_pms_tests('recommend', recommend_parameters)
 create_required_pms_tests('similar_queries', similar_q_parameters)
 

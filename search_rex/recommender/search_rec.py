@@ -148,29 +148,32 @@ class WeightedScorer(Scorer):
         return total_score / total_sim
 
 
-class SearchResultRecommender(object):
+class Recommender(object):
     '''Recommender System for search results based on queries committed by
     members of a community'''
 
-    def recommend(self, query_string, community_id, n=None):
-        '''Returns a list of n records that were relevant to the members of the
-        community when committing the same or a similar query'''
+    def recommend_search_results(self, query_string, n=None):
+        """
+        Returns a list of n records that were relevant to other users
+        when committing the same or a similar query
+        """
         raise NotImplementedError()
 
-    def register_hit(
-            self, query_string, community_id, record_id, t_stamp,
-            session_id):
-        '''Stores a click on a search result recorded during the given
-        session'''
+    def report_action(
+            self, record_id, is_internal_record, session_id,
+            timestamp, query_string=None):
+        """
+        Stores an action directed to a record
+        """
         raise NotImplementedError()
 
-    def get_similar_queries(self, query_string, community_id):
+    def get_similar_queries(self, query_string):
         '''Gets similar queries that were committed by the given community
         '''
         raise NotImplementedError()
 
 
-class GenericSearchResultRecommender(SearchResultRecommender):
+class GenericRecommender(Recommender):
 
     def __init__(
             self, data_model, query_nhood, query_sim, scorer):
@@ -179,32 +182,34 @@ class GenericSearchResultRecommender(SearchResultRecommender):
         self.query_sim = query_sim
         self.scorer = scorer
 
-    def register_hit(
-            self, query_string, community_id, record_id, t_stamp,
-            session_id):
-        '''Stores a click on a search result recorded during the given
-        session'''
-        return self.data_model.register_hit(
-            query_string=query_string, community_id=community_id,
-            record_id=record_id, t_stamp=t_stamp, session_id=session_id)
+    def report_action(
+            self, record_id, is_internal_record, session_id,
+            timestamp, query_string=None):
+        """
+        Stores an action directed to a record
+        """
 
-    def get_similar_queries(
-            self, query_string, community_id, max_results=10):
-        return self.query_nhood.get_neighbourhood(query_string, community_id)
+        return self.data_model.report_action(
+            query_string=query_string, record_id=record_id,
+            timestamp=timestamp, session_id=session_id,
+            is_internal_record=is_internal_record)
 
-    def recommend(self, query_string, community_id, max_results=10):
+    def get_similar_queries(self, query_string, max_results=10):
+        return self.query_nhood.get_neighbourhood(query_string)
+
+    def recommend_search_results(self, query_string, max_results=10):
         nbours = [
             nbour for nbour
-            in self.get_similar_queries(query_string, community_id)
+            in self.get_similar_queries(query_string)
         ]
 
         nbour_sims = {
             nbour: self.query_sim.compute_similarity(
-                query_string, nbour, community_id) for nbour in nbours
+                query_string, nbour) for nbour in nbours
         }
 
         hit_row_iter = self.data_model.get_hits_for_queries(
-            nbours, community_id)
+            nbours)
 
         records = set()
         hit_rows = {}

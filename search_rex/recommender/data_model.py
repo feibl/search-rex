@@ -33,11 +33,11 @@ class DataModel(object):
         """
         raise NotImplementedError()
 
-    def get_hits_for_queries(self, query_strings, community_id):
+    def get_hits_for_queries(self, query_strings):
         '''Retrieves the hit rows of the given queries'''
         raise NotImplementedError()
 
-    def get_queries(self, community_id):
+    def get_queries(self):
         '''Gets an iterator over all the committed queries'''
         raise NotImplementedError()
 
@@ -101,21 +101,19 @@ class PersistentDataModel(DataModel):
         session.commit()
         return True
 
-    def get_queries(self, community_id):
+    def get_queries(self):
         '''Returns an iterator over all the queries committed by the
         community'''
         session = db.session
-        self.is_community_present(session, community_id)
 
         query = (
-            session.query(CommunityQuery.query_string)
-            .filter(CommunityQuery.community_id == community_id)
+            session.query(SearchQuery.query_string).filter()
         )
 
         for query_string, in query:
             yield query_string
 
-    def get_hits_for_queries(self, query_strings, community_id):
+    def get_hits_for_queries(self, query_strings):
         """
         Returns the query hit information
 
@@ -123,28 +121,30 @@ class PersistentDataModel(DataModel):
         overall hits and the adjusted hits
         """
         session = db.session
-        self.is_community_present(session, community_id)
 
-        query = (
-            session.query(
-                ResultClick.query_string,
-                ResultClick.record_id,
-                func.count().label('total_hits'),
-                func.sum(func.hit_decay(
-                    ResultClick.time_created, self.half_life,
-                    self.life_span)
-                ).label('decayed_hits'),
-                func.max(ResultClick.time_created).label('last_interaction'),
-                )
-            .filter(
-                ResultClick.community_id == community_id,
-                ResultClick.query_string.in_(query_strings))
-            .group_by(
-                ResultClick.query_string,
-                ResultClick.record_id)
-            .order_by(
-                ResultClick.query_string)
+        query = session.query(
+            Action.query_string,
+            Action.record_id,
+            func.count().label('total_hits'),
+            func.sum(func.hit_decay(
+                Action.time_created, self.half_life,
+                self.life_span)
+            ).label('decayed_hits'),
+            func.max(Action.time_created).label('last_interaction'),
         )
+        query = query.join(Action.record)
+        query = query.filter(
+            Action.action_type == self.action_type,
+            Action.query_string.in_(query_strings)
+        )
+
+        if not self.include_internal_records:
+            query = query.filter(
+                Record.is_internal == False)
+
+        query = query.group_by(
+            Action.query_string, Action.record_id)
+        query = query.order_by(Action.query_string)
 
         for q_string, group in groupby(query, key=lambda h: h.query_string):
             yield (
@@ -153,33 +153,3 @@ class PersistentDataModel(DataModel):
                     hit.record_id: hit for hit in group
                 }
             )
-
-    def last_interaction_time(self, record_ids, community_id):
-        query = (
-            db.session.query(
-                ResultClick.record_id,
-                func.max(ResultClick.time_created))
-            .filter(
-                ResultClick.community_id == community_id,
-                ResultClick.record_id.in_(record_ids))
-            .group_by(ResultClick.record_id)
-        )
-
-        for record_id, last_interaction in query:
-            yield (record_id, last_interaction)
-
-    def popularity_rank(self, record_ids, community_id):
-        query = (
-            db.session.query(
-                ResultClick.record_id,
-                func.rank().over(
-                    partition_by=ResultClick.record_id,
-                    order_by=func.count().desc()))
-            .filter(
-                ResultClick.community_id == community_id,
-                ResultClick.record_id.in_(record_ids))
-            .group_by(ResultClick.record_id)
-        )
-
-        for record_id, rank in query:
-            yield (record_id, rank)

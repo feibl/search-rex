@@ -103,6 +103,8 @@ class Action(db.Model):
     time_created = db.Column(
         db.DateTime(), index=True, nullable=False)
 
+    record = db.relationship(Record, uselist=False)
+
 
 class ImportedRecordSimilarity(db.Model):
     __tablename__ = 'imported_record_similarity'

@@ -1,9 +1,8 @@
 import mock
 from ..test_base import BaseTestCase
-from search_rex.recommender.models import Community
+from search_rex.recommender.models import ActionType
 from search_rex.recommender.data_model import PersistentDataModel
-from search_rex.core import db
-from search_rex.recommender.search_rec import GenericSearchResultRecommender
+from search_rex.recommender.search_rec import GenericRecommender
 from search_rex.recommender.search_rec import WeightedSumScorer
 from search_rex.recommender.search_rec import Frequency
 from search_rex.recommender.query_sim import QuerySimilarity
@@ -15,8 +14,6 @@ from datetime import datetime
 
 
 _cwd = os.path.dirname(os.path.abspath(__file__))
-
-TEST_COMMUNITY = 'test_community'
 
 
 record_napoleon = 'Napoleon'
@@ -76,7 +73,7 @@ q_sims = {
 }
 
 
-def import_test_data(data_model):
+def import_test_data(recommender):
     test_data_path = os.path.join(_cwd, 'resource', 'test_data.csv')
     with open(test_data_path, 'r') as td_file:
         lines = td_file.readlines()
@@ -92,18 +89,18 @@ def import_test_data(data_model):
             timestamp = datetime.strptime(
                 timestamp, '%Y-%m-%d %H:%M:%S')
 
-            data_model.register_hit(
+            recommender.report_action(
                 query_string=query,
                 record_id=record,
-                t_stamp=timestamp,
+                timestamp=timestamp,
                 session_id=session_id,
-                community_id=TEST_COMMUNITY)
+                is_internal_record=True)
 
 
 def create_query_similarity():
     q_sim = QuerySimilarity()
 
-    def compute_similarity(q1, q2, c_id):
+    def compute_similarity(q1, q2):
         return q_sims[q1][q2] if q2 in q_sims[q1] else 0.0
 
     q_sim.compute_similarity = mock.Mock(side_effect=compute_similarity)
@@ -111,12 +108,11 @@ def create_query_similarity():
 
 
 def create_rec_system(data_model):
-    d_model = PersistentDataModel()
     q_sim = create_query_similarity()
     q_nhood = ThresholdQueryNeighbourhood(
-        data_model=d_model, query_sim=q_sim, sim_threshold=0.25)
-    return GenericSearchResultRecommender(
-        data_model=d_model,
+        data_model=data_model, query_sim=q_sim, sim_threshold=0.25)
+    return GenericRecommender(
+        data_model=data_model,
         query_sim=q_sim,
         query_nhood=q_nhood,
         scorer=WeightedSumScorer(Frequency()))
@@ -124,48 +120,38 @@ def create_rec_system(data_model):
 
 class RecommendationTestCase(BaseTestCase):
 
-    def create_community(self, community_id):
-        test_community = Community()
-        test_community.community_id = TEST_COMMUNITY
-        session = db.session
-        session.add(test_community)
-        session.commit()
-
     def setUp(self):
         super(RecommendationTestCase, self).setUp()
-        self.data_model = PersistentDataModel()
-        self.create_community(TEST_COMMUNITY)
+        self.data_model = PersistentDataModel(
+            include_internal_records=True,
+            action_type=ActionType.view)
 
-        import_test_data(self.data_model)
         self.sut = create_rec_system(self.data_model)
+        import_test_data(self.sut)
 
     def test__recommend__isolated_query__returns_1_recommendation(self):
-        recs = self.sut.recommend(
-            query_string=query_napoleon,
-            community_id=TEST_COMMUNITY)
+        recs = self.sut.recommend_search_results(
+            query_string=query_napoleon)
 
         assert len(recs) == 1
         assert recs[0].record_id == record_napoleon
         assert len(recs[0].related_queries) == 0
 
     def test__recommend__seen_query__current_query_is_set(self):
-        recs = self.sut.recommend(
-            query_string=query_napoleon,
-            community_id=TEST_COMMUNITY)
+        recs = self.sut.recommend_search_results(
+            query_string=query_napoleon)
 
         assert recs[0].current_query.query_string == query_napoleon
 
     def test__recommend__unseen_and_unrelated_query__no_recommendation(self):
-        recs = self.sut.recommend(
-            query_string=query_santa,
-            community_id=TEST_COMMUNITY)
+        recs = self.sut.recommend_search_results(
+            query_string=query_santa)
 
         assert len(recs) == 0
 
     def test__recommend__unseen_but_related_query__returns_recommendation(self):
-        recs = self.sut.recommend(
-            query_string=query_bonaparte,
-            community_id=TEST_COMMUNITY)
+        recs = self.sut.recommend_search_results(
+            query_string=query_bonaparte)
 
         assert len(recs) == 1
         assert recs[0].record_id == record_napoleon
@@ -173,16 +159,14 @@ class RecommendationTestCase(BaseTestCase):
         assert recs[0].related_queries[0].query_string == query_napoleon
 
     def test__recommend__unseen_but_related_query__current_query_is_none(self):
-        recs = self.sut.recommend(
-            query_string=query_bonaparte,
-            community_id=TEST_COMMUNITY)
+        recs = self.sut.recommend_search_results(
+            query_string=query_bonaparte)
 
         assert recs[0].current_query is None
 
     def test__recommend__recs_ordered_by_score(self):
-        recs = self.sut.recommend(
-            query_string=query_caesar,
-            community_id=TEST_COMMUNITY)
+        recs = self.sut.recommend_search_results(
+            query_string=query_caesar)
 
         assert len(recs) == 6
         assert recs[0].record_id == record_caesar
@@ -193,9 +177,8 @@ class RecommendationTestCase(BaseTestCase):
         assert recs[5].record_id == record_caesar_salad
 
     def test__recommend__max_records__recommendations_are_limitted(self):
-        recs = self.sut.recommend(
+        recs = self.sut.recommend_search_results(
             query_string=query_caesar,
-            community_id=TEST_COMMUNITY,
             max_results=3)
 
         assert len(recs) == 3
@@ -204,9 +187,8 @@ class RecommendationTestCase(BaseTestCase):
         assert recs[2].record_id == record_brutus
 
     def test__recommend__current_query_not_in_related_queries(self):
-        recs = self.sut.recommend(
-            query_string=query_caesar,
-            community_id=TEST_COMMUNITY)
+        recs = self.sut.recommend_search_results(
+            query_string=query_caesar)
 
         assert recs[0].current_query.query_string == query_caesar
         assert len(recs[0].related_queries) == 2

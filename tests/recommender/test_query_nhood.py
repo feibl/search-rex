@@ -6,7 +6,6 @@ from mock import Mock
 
 def test__ThresholdQueryNeighbourhood():
     query_string = 'fat cat'
-    community_id = 'freaks'
 
     similarities = {
         'fat rat': 0.5,
@@ -16,10 +15,10 @@ def test__ThresholdQueryNeighbourhood():
     fake_model = DataModel()
     fake_sim = QuerySimilarity
 
-    def query_sim(query1, query2, community_id):
+    def query_sim(query1, query2):
         return similarities[query2]
 
-    def get_queries(community_id):
+    def get_queries():
         return similarities.keys()
 
     fake_sim.compute_similarity = Mock(side_effect=query_sim)
@@ -30,7 +29,7 @@ def test__ThresholdQueryNeighbourhood():
         query_sim=fake_sim,
         sim_threshold=0.5)
 
-    nbours = list(sut.get_neighbourhood(query_string, community_id))
+    nbours = list(sut.get_neighbourhood(query_string))
 
     assert len(nbours) == 1
     assert nbours[0] == 'fat rat'

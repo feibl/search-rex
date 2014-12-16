@@ -1,7 +1,4 @@
 from ..test_base import BaseTestCase
-from search_rex.core import db
-from search_rex.recommender.data_model import PersistentDataModel
-from search_rex.recommender.models import Community
 from datetime import datetime
 from json import loads
 
@@ -21,17 +18,8 @@ def create_request(route, parameters):
 
 class TestParameters(BaseTestCase):
 
-    def create_community(self, community_id):
-        test_community = Community()
-        test_community.community_id = TEST_COMMUNITY
-        session = db.session
-        session.add(test_community)
-        session.commit()
-
     def setUp(self):
         super(TestParameters, self).setUp()
-        self.data_model = PersistentDataModel()
-        self.create_community(TEST_COMMUNITY)
 
     def test__view__wrong_time_format(self):
         parameters = dict(

@@ -91,6 +91,11 @@ inspired_parameters = dict(
     session_id=5556,
 )
 
+others_parameters = dict(
+    include_internal_records=True,
+    record_id='Secret document',
+)
+
 recommend_parameters = dict(
     community_id=TEST_COMMUNITY,
     query_string='hello world',
@@ -105,6 +110,8 @@ create_required_pms_tests('view', action_parameters)
 create_required_pms_tests('copy', action_parameters)
 create_required_pms_tests('inspired_by_your_view_history', inspired_parameters)
 create_required_pms_tests('inspired_by_your_copy_history', inspired_parameters)
+create_required_pms_tests('other_users_also_viewed', others_parameters)
+create_required_pms_tests('other_users_also_copied', others_parameters)
 create_required_pms_tests('recommend', recommend_parameters)
 create_required_pms_tests('similar_queries', similar_q_parameters)
 
@@ -127,3 +134,7 @@ create_wrong_api_key_test('view', action_parameters)
 create_wrong_api_key_test('copy', action_parameters)
 create_wrong_api_key_test('recommend', recommend_parameters)
 create_wrong_api_key_test('similar_queries', similar_q_parameters)
+create_wrong_api_key_test('inspired_by_your_view_history', inspired_parameters)
+create_wrong_api_key_test('inspired_by_your_copy_history', inspired_parameters)
+create_wrong_api_key_test('other_users_also_viewed', others_parameters)
+create_wrong_api_key_test('other_users_also_copied', others_parameters)

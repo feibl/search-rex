@@ -107,6 +107,28 @@ def inspired_by_your_copy_history():
     return jsonify(results=[])
 
 
+@rec_api.route('/api/other_users_also_viewed', methods=['GET'])
+@api_key_required
+def other_users_also_viewed():
+    include_internal_records = parse_arg(
+        request, 'include_internal_records', required=True, type=bool)
+    record_id = parse_arg(request, 'record_id', required=True)
+    max_num_recs = parse_arg(
+        request, 'max_num_recs', required=False, type=int)
+    return jsonify(results=[])
+
+
+@rec_api.route('/api/other_users_also_copied', methods=['GET'])
+@api_key_required
+def other_users_also_copied():
+    include_internal_records = parse_arg(
+        request, 'include_internal_records', required=True, type=bool)
+    record_id = parse_arg(request, 'record_id', required=True)
+    max_num_recs = parse_arg(
+        request, 'max_num_recs', required=False, type=int)
+    return jsonify(results=[])
+
+
 @rec_api.route('/api/similar_queries', methods=['GET'])
 @api_key_required
 def similar_queries():

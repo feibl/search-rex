@@ -35,7 +35,7 @@ class TestParameters(BaseTestCase):
 
     def test__view__wrong_time_format(self):
         parameters = dict(
-            community_id=TEST_COMMUNITY,
+            is_internal_record=True,
             record_id='Secret document',
             query_string='hello world',
             session_id=5556,
@@ -79,10 +79,9 @@ def create_required_pms_tests(view, req_parameters):
         setattr(TestParameters, test_method.__name__, test_method)
 
 
-view_parameters = dict(
-    community_id=TEST_COMMUNITY,
+action_parameters = dict(
+    is_internal_record=True,
     record_id='Secret document',
-    query_string='hello world',
     session_id=5556,
     timestamp=datetime(1999, 12, 24).isoformat(),
 )
@@ -97,7 +96,8 @@ similar_q_parameters = dict(
     query_string='hello world',
 )
 
-create_required_pms_tests('view', view_parameters)
+create_required_pms_tests('view', action_parameters)
+create_required_pms_tests('copy', action_parameters)
 create_required_pms_tests('recommend', recommend_parameters)
 create_required_pms_tests('similar_queries', similar_q_parameters)
 
@@ -116,6 +116,7 @@ def create_wrong_api_key_test(view_to_test, parameters):
         .format(view_to_test)
     setattr(TestParameters, wrong_api_key_test.__name__, wrong_api_key_test)
 
-create_wrong_api_key_test('view', view_parameters)
+create_wrong_api_key_test('view', action_parameters)
+create_wrong_api_key_test('copy', action_parameters)
 create_wrong_api_key_test('recommend', recommend_parameters)
 create_wrong_api_key_test('similar_queries', similar_q_parameters)

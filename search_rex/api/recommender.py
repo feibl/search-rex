@@ -52,18 +52,37 @@ def parse_arg(
 @rec_api.route('/api/view', methods=['GET'])
 @api_key_required
 def view():
-    community_id = parse_arg(request, 'community_id', required=True)
-    query_string = parse_arg(request, 'query_string', required=True)
+    is_internal_record = parse_arg(
+        request, 'is_internal_record', required=True, type=bool)
     record_id = parse_arg(request, 'record_id', required=True)
     session_id = parse_arg(request, 'session_id', required=True)
     timestamp = parse_arg(
         request, 'timestamp', required=True, type=datetime_from_iso8601)
-
+    query_string = parse_arg(request, 'query_string', required=False)
+    community_id = 3
     rec_service.register_hit(
         query_string=query_string, community_id=community_id,
         record_id=record_id, t_stamp=timestamp, session_id=session_id)
 
-    return 'Complete'
+    return jsonify(success=True)
+
+
+@rec_api.route('/api/copy', methods=['GET'])
+@api_key_required
+def copy():
+    is_internal_record = parse_arg(
+        request, 'is_internal_record', required=True, type=bool)
+    record_id = parse_arg(request, 'record_id', required=True)
+    session_id = parse_arg(request, 'session_id', required=True)
+    timestamp = parse_arg(
+        request, 'timestamp', required=True, type=datetime_from_iso8601)
+    query_string = parse_arg(request, 'query_string', required=False)
+    community_id = 3
+    rec_service.register_hit(
+        query_string=query_string, community_id=community_id,
+        record_id=record_id, t_stamp=timestamp, session_id=session_id)
+
+    return jsonify(success=True)
 
 
 @rec_api.route('/api/similar_queries', methods=['GET'])

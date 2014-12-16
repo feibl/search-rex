@@ -155,15 +155,40 @@ def copied_results_for_query():
 @api_key_required
 def similar_queries():
     '''Returns a list of queries which are similar to the target query'''
-    community_id = parse_arg(request, 'community_id', required=True)
     query_string = parse_arg(request, 'query_string', required=True)
-
+    community_id = 3
     similar_queries = rec_service.get_similar_queries(
         query_string, community_id)
 
     return jsonify(
         {'results': [sim_q for sim_q in similar_queries]}
     )
+
+
+@rec_api.route('/api/set_record_active', methods=['GET'])
+@api_key_required
+def set_record_active():
+    '''Returns a list of queries which are similar to the target query'''
+    record_id = parse_arg(request, 'record_id', required=True)
+    active = parse_arg(request, 'active', required=True, type=bool)
+
+    return jsonify(success=True)
+
+
+@rec_api.route('/api/import_record_similarity', methods=['GET'])
+@api_key_required
+def import_record_similarity():
+    '''Returns a list of queries which are similar to the target query'''
+    from_record_id = parse_arg(request, 'from_record_id', required=True)
+    to_record_id = parse_arg(request, 'to_record_id', required=True)
+    from_is_internal = parse_arg(
+        request, 'from_record_is_internal', required=True, type=bool)
+    to_is_internal = parse_arg(
+        request, 'to_record_is_internal', required=True, type=bool)
+    sim_value = parse_arg(
+        request, 'similarity_value', required=True, type=float)
+
+    return jsonify(success=True)
 
 
 @rec_api.route('/api/recommend', methods=['GET'])

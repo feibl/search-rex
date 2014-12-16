@@ -107,8 +107,20 @@ recommend_parameters = dict(
 )
 
 similar_q_parameters = dict(
-    community_id=TEST_COMMUNITY,
     query_string='hello world',
+)
+
+import_sim_parameters = dict(
+    from_record_id='Secret document',
+    to_record_id='other doc',
+    from_record_is_internal=True,
+    to_record_is_internal=True,
+    similarity_value=0.78,
+)
+
+set_active_parameters = dict(
+    record_id='Secret document',
+    active=True,
 )
 
 create_required_pms_tests('view', action_parameters)
@@ -121,6 +133,8 @@ create_required_pms_tests('viewed_results_for_query', search_parameters)
 create_required_pms_tests('copied_results_for_query', search_parameters)
 create_required_pms_tests('recommend', recommend_parameters)
 create_required_pms_tests('similar_queries', similar_q_parameters)
+create_required_pms_tests('import_record_similarity', import_sim_parameters)
+create_required_pms_tests('set_record_active', set_active_parameters)
 
 
 def create_wrong_api_key_test(view_to_test, parameters):
@@ -145,3 +159,7 @@ create_wrong_api_key_test('inspired_by_your_view_history', inspired_parameters)
 create_wrong_api_key_test('inspired_by_your_copy_history', inspired_parameters)
 create_wrong_api_key_test('other_users_also_viewed', others_parameters)
 create_wrong_api_key_test('other_users_also_copied', others_parameters)
+create_wrong_api_key_test('viewed_results_for_query', search_parameters)
+create_wrong_api_key_test('copied_results_for_query', search_parameters)
+create_wrong_api_key_test('import_record_similarity', import_sim_parameters)
+create_wrong_api_key_test('set_record_active', set_active_parameters)

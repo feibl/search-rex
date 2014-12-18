@@ -1,5 +1,5 @@
 import mock
-from ..test_base import BaseTestCase
+from test_base import BaseTestCase
 from search_rex.recommender.models import ActionType
 from search_rex.recommender.data_model import PersistentDataModel
 from search_rex.recommender.search_rec import GenericRecommender

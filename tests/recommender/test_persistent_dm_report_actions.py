@@ -1,4 +1,4 @@
-from ..test_base import BaseTestCase
+from test_base import BaseTestCase
 from search_rex.recommender.data_model import PersistentDataModel
 from datetime import datetime
 from search_rex.recommender.models import Action

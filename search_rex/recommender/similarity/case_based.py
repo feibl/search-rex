@@ -1,3 +1,6 @@
+from similarity_metrics import jaccard_sim
+
+
 def shingle(doc_string, k):
     '''Extracts a set shingles from the input string. Shingles are contiguous
     subsequences of tokens'''
@@ -14,22 +17,10 @@ def shingle(doc_string, k):
     return shingles
 
 
-def jaccard_sim(X, Y):
-    '''Computes the Jaccard similarity between two lists'''
-    x = set(X)
-    y = set(Y)
-
-    union = x | y
-    if len(union) == 0:
-        return 1.0
-
-    return float(len(x & y)) / len(union)
-
-
 class QuerySimilarity(object):
     '''Computes the similarity between two queries'''
 
-    def compute_similarity(self, from_query_string, to_query_string):
+    def get_similarity(self, from_query_string, to_query_string):
         raise NotImplementedError()
 
 
@@ -39,7 +30,7 @@ class StringJaccardSimilarity(QuerySimilarity):
     def __init__(self, k_shingles):
         self.k_shingles = k_shingles
 
-    def compute_similarity(self, from_query_string, to_query_string):
+    def get_similarity(self, from_query_string, to_query_string):
         X = shingle(from_query_string, self.k_shingles)
         Y = shingle(to_query_string, self.k_shingles)
         return jaccard_sim(X, Y)

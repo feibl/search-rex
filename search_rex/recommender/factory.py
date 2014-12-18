@@ -1,25 +1,18 @@
-from search_rec import GenericRecommender
-from search_rec import WeightedSumScorer
-from search_rec import LogFrequency
-from query_sim import StringJaccardSimilarity
-from query_nhood import ThresholdQueryNeighbourhood
-from data_model import PersistentDataModel
+from rec_service import RecommenderService
+from data_model import ActionDataModelWrapper
 
 
-def create_rec_system(
-        action_type, include_internal_records,
-        k_shingles=3, sim_threshold=0.2):
+def create_rec_service(
+        data_model, action_type, include_internal_records,
+        query_based_recsys_factory, record_based_recsys_factory):
 
-    d_model = PersistentDataModel(
-        action_type=action_type,
+    model_wrapper = ActionDataModelWrapper(
+        data_model, action_type=action_type,
         include_internal_records=include_internal_records)
 
-    q_sim = StringJaccardSimilarity(k_shingles=k_shingles)
-    q_nhood = ThresholdQueryNeighbourhood(
-        data_model=d_model, query_sim=q_sim, sim_threshold=sim_threshold)
+    q_based_recsys = query_based_recsys_factory(model_wrapper)
+    r_based_recsys = record_based_recsys_factory(model_wrapper)
 
-    return GenericRecommender(
-        data_model=d_model,
-        query_sim=q_sim,
-        query_nhood=q_nhood,
-        scorer=WeightedSumScorer(LogFrequency()))
+    return RecommenderService(
+        query_based_recsys=q_based_recsys,
+        record_based_recsys=r_based_recsys)

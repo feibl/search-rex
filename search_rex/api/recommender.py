@@ -10,6 +10,7 @@ from ..services import internal_view_action_recommender
 from ..services import external_view_action_recommender
 from ..services import external_copy_action_recommender
 from ..services import internal_copy_action_recommender
+from ..services import data_model
 
 
 rec_api = Blueprint('rec_api', __name__)
@@ -79,7 +80,7 @@ def view():
         request, 'timestamp', required=True, type=datetime_from_iso8601)
     query_string = parse_arg(request, 'query_string', required=False)
 
-    internal_view_action_recommender.report_action(
+    data_model.report_view_action(
         query_string=query_string, record_id=record_id, timestamp=timestamp,
         session_id=session_id, is_internal_record=is_internal_record)
 
@@ -101,7 +102,7 @@ def copy():
         request, 'timestamp', required=True, type=datetime_from_iso8601)
     query_string = parse_arg(request, 'query_string', required=False)
 
-    internal_copy_action_recommender.report_action(
+    data_model.report_copy_action(
         query_string=query_string, record_id=record_id, timestamp=timestamp,
         session_id=session_id, is_internal_record=is_internal_record)
 
@@ -125,7 +126,9 @@ def inspired_by_your_view_history():
     recs = recommender.recommend_from_history(
         session_id=session_id, max_num_recs=max_num_recs)
 
-    return jsonify(results=[rec.serialize() for rec in recs])
+    return jsonify(results=[
+        {'record_id': record_id, 'score': score} for record_id, score in recs
+    ])
 
 
 @rec_api.route('/api/inspired_by_your_copy_history', methods=['GET'])
@@ -145,7 +148,9 @@ def inspired_by_your_copy_history():
     recs = recommender.recommend_from_history(
         session_id=session_id, max_num_recs=max_num_recs)
 
-    return jsonify(results=[rec.serialize() for rec in recs])
+    return jsonify(results=[
+        {'record_id': record_id, 'score': score} for record_id, score in recs
+    ])
 
 
 @rec_api.route('/api/other_users_also_viewed', methods=['GET'])
@@ -165,7 +170,9 @@ def other_users_also_viewed():
     recs = recommender.recommend_similar_records(
         record_id, max_num_recs=max_num_recs)
 
-    return jsonify(results=[rec.serialize() for rec in recs])
+    return jsonify(results=[
+        {'record_id': record_id, 'score': score} for record_id, score in recs
+    ])
 
 
 @rec_api.route('/api/other_users_also_copied', methods=['GET'])
@@ -185,7 +192,9 @@ def other_users_also_copied():
     recs = recommender.recommend_similar_records(
         record_id, max_num_recs=max_num_recs)
 
-    return jsonify(results=[rec.serialize() for rec in recs])
+    return jsonify(results=[
+        {'record_id': record_id, 'score': score} for record_id, score in recs
+    ])
 
 
 @rec_api.route('/api/viewed_results_for_query', methods=['GET'])

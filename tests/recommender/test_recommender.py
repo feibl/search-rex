@@ -2,6 +2,7 @@ import mock
 from test_base import BaseTestCase
 from search_rex.recommender.models import ActionType
 from search_rex.recommender.data_model import PersistentDataModel
+from search_rex.recommender.data_model import ActionDataModelWrapper
 from search_rex.recommender.search_rec import GenericRecommender
 from search_rex.recommender.search_rec import WeightedSumScorer
 from search_rex.recommender.search_rec import Frequency
@@ -73,7 +74,7 @@ q_sims = {
 }
 
 
-def import_test_data(recommender):
+def import_test_data(data_model, records_are_internal, action_type):
     test_data_path = os.path.join(_cwd, 'resource', 'test_data.csv')
     with open(test_data_path, 'r') as td_file:
         lines = td_file.readlines()
@@ -89,12 +90,13 @@ def import_test_data(recommender):
             timestamp = datetime.strptime(
                 timestamp, '%Y-%m-%d %H:%M:%S')
 
-            recommender.report_action(
+            data_model.report_action(
                 query_string=query,
                 record_id=record,
                 timestamp=timestamp,
                 session_id=session_id,
-                is_internal_record=True)
+                is_internal_record=records_are_internal,
+                action_type=action_type)
 
 
 def create_query_similarity():
@@ -122,12 +124,16 @@ class RecommendationTestCase(BaseTestCase):
 
     def setUp(self):
         super(RecommendationTestCase, self).setUp()
-        self.data_model = PersistentDataModel(
+        data_model = PersistentDataModel()
+        model_wrapper = ActionDataModelWrapper(
+            data_model,
             include_internal_records=True,
             action_type=ActionType.view)
 
-        self.sut = create_rec_system(self.data_model)
-        import_test_data(self.sut)
+        self.sut = create_rec_system(model_wrapper)
+        import_test_data(
+            data_model, records_are_internal=True,
+            action_type=ActionType.view)
 
     def test__recommend__isolated_query__returns_1_recommendation(self):
         recs = self.sut.recommend_search_results(

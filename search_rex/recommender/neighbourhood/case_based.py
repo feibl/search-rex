@@ -1,7 +1,7 @@
 class QueryNeighbourhood(object):
     '''Computes the neighbourhood of a target query'''
 
-    def get_neighbourhood(self, query_string):
+    def get_neighbours(self, query_string):
         '''Retrieves a list of queries that belong to the neighbourhood of
         the given query'''
         raise NotImplementedError()
@@ -17,7 +17,7 @@ class ThresholdQueryNeighbourhood(object):
         self.query_sim = query_sim
         self.sim_threshold = sim_threshold
 
-    def get_neighbourhood(self, query_string):
+    def get_neighbours(self, query_string):
         for other_q_string in self.data_model.get_queries():
             similarity = self.query_sim.compute_similarity(
                 query_string, other_q_string)

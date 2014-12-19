@@ -10,7 +10,7 @@ def create_app(config_path=None):
 
     db.init_app(app)
 
-    from .views import rec_api
+    from api.recommender import rec_api
 
     app.register_blueprint(rec_api)
 

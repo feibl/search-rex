@@ -150,3 +150,26 @@ class GetRecordsTestCase(BaseTestCase):
         sessions_that_seen = list(self.sut.get_sessions_that_seen_record(
             record_id=record_id, action_type=action_type))
         assert sorted(sessions_that_seen) == sorted(expected_sessions)
+
+    def test__get_record_columns__do_not_include_internal_records(self):
+        action_type = ActionType.view
+        include_internal_records = False
+
+        expected_columns = [
+            (record_caesar, [session_alice, session_bob, session_dave]),
+            (record_brutus, [session_alice, session_bob]),
+            (record_cleopatra, [session_bob, session_carol]),
+            (record_napoleon, [session_eric]),
+        ]
+
+        returned_columns = list(self.sut.get_record_columns(
+            action_type, include_internal_records))
+
+        expected_columns = sorted(expected_columns)
+        returned_columns = sorted(returned_columns)
+
+        assert len(returned_columns) == len(expected_columns)
+        for i in range(len(expected_columns)):
+            assert returned_columns[i][0] == expected_columns[i][0]
+            assert sorted(returned_columns[i][1]) ==\
+                sorted(expected_columns[i][1])

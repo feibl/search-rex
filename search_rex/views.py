@@ -1,4 +1,4 @@
-from ..core import InvalidUsage
+from core import InvalidUsage
 from flask import request
 from flask import jsonify
 from flask import Blueprint
@@ -6,10 +6,12 @@ from flask import current_app
 from flask.ext.restful.inputs import datetime_from_iso8601
 from functools import wraps
 
-from ..models import ActionType
+from models import ActionType
 
-from ..services import data_model
-from ..services import get_recommender
+from services import report_view_action
+from services import report_copy_action
+
+from .recommendations import get_recommender
 
 
 rec_api = Blueprint('rec_api', __name__)
@@ -75,7 +77,7 @@ def view():
         request, 'timestamp', required=True, type=datetime_from_iso8601)
     query_string = parse_arg(request, 'query_string', required=False)
 
-    data_model.report_view_action(
+    report_view_action(
         query_string=query_string, record_id=record_id, timestamp=timestamp,
         session_id=session_id, is_internal_record=is_internal_record)
 
@@ -97,7 +99,7 @@ def copy():
         request, 'timestamp', required=True, type=datetime_from_iso8601)
     query_string = parse_arg(request, 'query_string', required=False)
 
-    data_model.report_copy_action(
+    report_copy_action(
         query_string=query_string, record_id=record_id, timestamp=timestamp,
         session_id=session_id, is_internal_record=is_internal_record)
 
@@ -241,7 +243,7 @@ def similar_queries():
 
     query_string = parse_arg(request, 'query_string', required=True)
     community_id = 3
-    similar_queries = internal_view_action_recommender.get_similar_queries(
+    similar_queries = get_copy_action_recommender(True).get_similar_queries(
         query_string, community_id)
 
     return jsonify(

@@ -210,6 +210,25 @@ class PersistentDataModel(DataModel):
         for session_id, in query:
             yield session_id
 
+    def get_record_columns(self, action_type, include_internal_records):
+        """
+        Retrieves the Records and the list of sessions that seen it
+        """
+        session = db.session
+
+        query = session.query(Action.session_id, Action.record_id)
+        query = query.filter(Action.action_type == action_type)
+        if not include_internal_records:
+            query = query.join(Action.record)
+            query = query.filter(Record.is_internal == False)
+        query = query.order_by(Action.record_id)
+
+        for record_id, group in groupby(
+                query, key=lambda entry: entry.record_id):
+            yield (
+                record_id, [member.session_id for member in group]
+            )
+
 
 class AbstractActionDataModelWrapper(object):
     """
@@ -228,6 +247,18 @@ class AbstractActionDataModelWrapper(object):
 
     def get_queries(self):
         '''Gets an iterator over all the committed queries'''
+        raise NotImplementedError()
+
+    def get_seen_records(self, session_id):
+        """
+        Retrieves the records that the session interacted with
+        """
+        raise NotImplementedError()
+
+    def get_sessions_that_seen_record(self, record_id):
+        """
+        Retrieves the session that interacted with the record
+        """
         raise NotImplementedError()
 
 
@@ -276,3 +307,28 @@ class ActionDataModelWrapper(AbstractActionDataModelWrapper):
         """
         return self.data_model.get_sessions_that_seen_record(
             record_id, self.action_type)
+
+
+class InMemoryRecordBasedDataModel(AbstractActionDataModelWrapper):
+
+    def __init__(self, data_model):
+        self.data_model = data_model
+        self.record_session_mat = {}
+        self.init_model()
+
+    def init_model(self):
+        record_session_mat = {}
+
+        for record_id in self.data_model.get_records():
+            record_session_mat[record_id] =\
+                self.data_model.get_sessions_that_seen_record(
+                    record_id)
+        self.record_session_mat = record_session_mat
+
+    def get_records(self):
+        return self.record_session_mat.keys()
+
+    def get_sessions_that_seen_record(self, record_id):
+        if record_id not in self.record_session_mat:
+            return []
+        return self.record_session_mat[record_id]

@@ -1,4 +1,5 @@
-from search_rex.recommender.similarity.similarity_metrics import jaccard_sim
+from search_rex.recommendations.similarity.similarity_metrics import\
+    jaccard_sim
 import math
 
 

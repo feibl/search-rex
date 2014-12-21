@@ -17,14 +17,14 @@ def shingle(doc_string, k):
     return shingles
 
 
-class QuerySimilarity(object):
+class AbstractQuerySimilarity(object):
     '''Computes the similarity between two queries'''
 
     def get_similarity(self, from_query_string, to_query_string):
         raise NotImplementedError()
 
 
-class StringJaccardSimilarity(QuerySimilarity):
+class StringJaccardSimilarity(AbstractQuerySimilarity):
     '''Computes the jaccard similarity on string basis using shingles'''
 
     def __init__(self, k_shingles):

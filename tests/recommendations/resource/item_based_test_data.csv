@@ -1,10 +1,12 @@
 session,record,action_type
 alice,caesar,view
 alice,brutus,view
+alice,inactive,view
 
 alice,caesar,copy
 alice,brutus,copy
 alice,secrets_of_rome,copy
+alice,inactive,copy
 
 bob,caesar,view
 bob,brutus,view

@@ -2,7 +2,7 @@ from flask.ext.testing import TestCase
 import os
 from flask import Flask
 from search_rex.core import db
-from search_rex.recommender.models import *
+from search_rex.models import *
 
 _cwd = os.path.dirname(os.path.abspath(__file__))
 

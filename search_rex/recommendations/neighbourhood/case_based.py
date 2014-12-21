@@ -1,4 +1,4 @@
-class QueryNeighbourhood(object):
+class AbstractQueryNeighbourhood(object):
     '''Computes the neighbourhood of a target query'''
 
     def get_neighbours(self, query_string):
@@ -7,7 +7,7 @@ class QueryNeighbourhood(object):
         raise NotImplementedError()
 
 
-class ThresholdQueryNeighbourhood(object):
+class ThresholdQueryNeighbourhood(AbstractQueryNeighbourhood):
     '''The neighbourhood of a query consists of queries that is equals or
     greater than a specified similarity threshold. The latter is calculated by
     a given query similarity metric'''

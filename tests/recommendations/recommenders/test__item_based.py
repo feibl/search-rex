@@ -1,10 +1,11 @@
-from search_rex.recommender.recommenders.item_based import\
+from search_rex.recommendations.recommenders.item_based import\
     RecordBasedRecommender
-from search_rex.recommender.neighbourhood.item_based import\
+from search_rex.recommendations.neighbourhood.item_based import\
     AbstractRecordNeighbourhood
-from search_rex.recommender.similarity.item_based import\
+from search_rex.recommendations.similarity.item_based import\
     AbstractRecordSimilarity
-from search_rex.recommender.data_model import DataModel
+from search_rex.recommendations.data_model.item_based import\
+    AbstractRecordBasedDataModel
 import mock
 
 
@@ -38,7 +39,7 @@ doc_sims = {
 
 
 def create_recommender(seen_docs=seen_docs, doc_sims=doc_sims):
-    data_model = DataModel()
+    data_model = AbstractRecordBasedDataModel()
     data_model.get_seen_records = mock.Mock(
         side_effect=lambda s_id: seen_docs)
     record_sim = AbstractRecordSimilarity()

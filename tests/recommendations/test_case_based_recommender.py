@@ -1,13 +1,13 @@
 import mock
 from test_base import BaseTestCase
-from search_rex.recommender.models import ActionType
-from search_rex.recommender.data_model import PersistentDataModel
-from search_rex.recommender.data_model import ActionDataModelWrapper
-from search_rex.recommender.search_rec import GenericRecommender
-from search_rex.recommender.search_rec import WeightedSumScorer
-from search_rex.recommender.search_rec import Frequency
-from search_rex.recommender.query_sim import QuerySimilarity
-from search_rex.recommender.query_nhood import ThresholdQueryNeighbourhood
+from search_rex.models import ActionType
+from search_rex.recommendations.data_model.case_based import\
+    QueryBasedDataModel
+from search_rex.recommendations.search_rec import GenericRecommender
+from search_rex.recommendations.search_rec import WeightedSumScorer
+from search_rex.recommendations.search_rec import Frequency
+from search_rex.recommendations.query_sim import QuerySimilarity
+from search_rex.recommendations.query_nhood import ThresholdQueryNeighbourhood
 
 
 import os

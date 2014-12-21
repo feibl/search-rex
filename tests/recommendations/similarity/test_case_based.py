@@ -1,5 +1,6 @@
-from search_rex.recommender.query_sim import shingle
-from search_rex.recommender.query_sim import StringJaccardSimilarity
+from search_rex.recommendations.similarity.case_based import shingle
+from search_rex.recommendations.similarity.case_based import\
+    StringJaccardSimilarity
 
 
 def test__shingle():
@@ -25,4 +26,4 @@ def test__string_jaccard_sim():
 
     sut = StringJaccardSimilarity(k_shingles=3)
 
-    assert sut.compute_similarity(string1, string2) == 0.4
+    assert sut.get_similarity(string1, string2) == 0.4

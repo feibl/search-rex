@@ -1,22 +1,18 @@
 from test_base import BaseTestCase
-from search_rex.recommender.data_model import PersistentDataModel
+from search_rex.recommendations.queries import get_queries
 from search_rex.core import db
+from search_rex.models import Action
+from search_rex.models import Record
+from search_rex.models import ActionType
+from search_rex.models import SearchQuery
+from search_rex.models import SearchSession
 from datetime import datetime
-from search_rex.recommender.models import Action
-from search_rex.recommender.models import Record
-from search_rex.recommender.models import ActionType
-from search_rex.recommender.models import SearchQuery
-from search_rex.recommender.models import SearchSession
 
 
 class GetQueriesTestCase(BaseTestCase):
 
     def setUp(self):
         super(GetQueriesTestCase, self).setUp()
-
-        self.data_model = PersistentDataModel(
-            action_type=ActionType.view,
-            include_internal_records=True)
 
     def test__get_queries(self):
         queries = ['hello', 'darkness', 'my', 'friend']
@@ -26,7 +22,7 @@ class GetQueriesTestCase(BaseTestCase):
             session.add(search_query)
         session.commit()
 
-        query_results = list(self.data_model.get_queries())
+        query_results = list(get_queries())
         assert len(query_results) == len(queries)
         assert sorted(query_results) == sorted(queries)
 

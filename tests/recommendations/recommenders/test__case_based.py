@@ -1,9 +1,10 @@
-from search_rex.recommender.search_rec import relevance
-from search_rex.recommender.search_rec import LogFrequency
-from search_rex.recommender.search_rec import Frequency
-from search_rex.recommender.search_rec import WeightedScorer
-from search_rex.recommender.search_rec import WeightedSumScorer
-from ..test_util import assert_almost_equal
+from search_rex.recommendations.recommenders.case_based import relevance
+from search_rex.recommendations.recommenders.case_based import LogFrequency
+from search_rex.recommendations.recommenders.case_based import Frequency
+from search_rex.recommendations.recommenders.case_based import WeightedScorer
+from search_rex.recommendations.recommenders.case_based import\
+    WeightedSumScorer
+from ...test_util import assert_almost_equal
 
 from collections import namedtuple
 

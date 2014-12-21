@@ -18,6 +18,10 @@ from .core import db
 logger = logging.getLogger(__name__)
 
 
+class RecordNotPresentException(Exception):
+    pass
+
+
 def report_action(
         record_id, is_internal_record, session_id,
         timestamp, action_type, query_string=None):
@@ -85,7 +89,14 @@ def set_record_active(record_id, active):
 
     Inactive records are not returned in recommendations
     """
-    raise NotImplementedError()
+    record = Record.query.filter_by(record_id=record_id).first()
+    if not record:
+        raise RecordNotPresentException()
+
+    record.active = active
+    db.session.add(record)
+    db.session.commit()
+    return True
 
 
 def import_record_similarity(

@@ -28,6 +28,8 @@ class KNearestRecordNeighbourhood(object):
                 record_id, other_record)
             if math.isnan(similarity):
                 continue
+            if similarity == 0.0:
+                continue
             if other_record == record_id:
                 continue
             candidates[other_record] = similarity
@@ -46,17 +48,18 @@ class InMemoryKNearestRecordNeighbourhood(
     """
 
     def __init__(self, k, data_model, record_sim):
-        self.k = k
         self.data_model = data_model
         self.record_sim = record_sim
+        self.record_nhood = KNearestRecordNeighbourhood(
+            k=k, data_model=data_model, record_sim=record_sim)
         self.init_similarities()
 
     def init_similarities(self):
         nbours_dict = {}
         for record in self.data_model.get_records():
-            nbours = self.__get_neighbours(record)
+            nbours = self.record_nhood.get_neighbours(record)
             nbours_dict[record] = {
-                nbour: sim for nbour, sim in nbours
+                nbour: self.record_sim(record, nbour) for nbour in nbours
             }
         self.nbours_dict = nbours_dict
 
@@ -70,20 +73,3 @@ class InMemoryKNearestRecordNeighbourhood(
             if to_record_id in self.nbours_dict[from_record_id]:
                 return self.nbours_dict[from_record_id][to_record_id]
         return float('nan')
-
-    def __get_neighbours(self, record_id):
-        candidates = {}
-        for other_record in self.data_model.get_records():
-            similarity = self.record_sim.get_similarity(
-                record_id, other_record)
-            if math.isnan(similarity):
-                continue
-            if other_record == record_id:
-                continue
-            candidates[other_record] = similarity
-
-        candidates_by_score = sorted(
-            candidates.iteritems(), key=lambda (r_id, sim): sim,
-            reverse=True)[:self.k]
-
-        return candidates_by_score

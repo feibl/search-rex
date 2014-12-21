@@ -74,14 +74,13 @@ def get_queries():
     for query_string, in query:
         yield query_string
 
-def get_records(self, include_internal_records):
+def get_records(include_internal_records):
     '''Gets an iterator over all the records'''
     session = db.session
 
-    query = session.query(Record.record_id).filter()
+    query = session.query(Record.record_id).filter(Record.active == True)
     if not include_internal_records:
-        query = query.filter(
-            Record.is_internal == False)
+        query = query.filter(Record.is_internal == False)
 
     for record_id, in query:
         yield record_id
@@ -93,9 +92,12 @@ def get_seen_records(session_id, action_type):
     """
     session = db.session
 
-    query = session.query(Action.record_id).filter(
+    query = session.query(Action.record_id)
+    query = query.join(Action.record)
+    query = query.filter(
         Action.action_type == action_type,
-        Action.session_id == session_id).all()
+        Action.session_id == session_id,
+        Record.active == True).all()
 
     for record_id, in query:
         yield record_id
@@ -122,9 +124,11 @@ def get_record_columns(action_type, include_internal_records):
     session = db.session
 
     query = session.query(Action.session_id, Action.record_id)
-    query = query.filter(Action.action_type == action_type)
+    query = query.join(Action.record)
+    query = query.filter(
+        Action.action_type == action_type,
+        Record.active == True)
     if not include_internal_records:
-        query = query.join(Action.record)
         query = query.filter(Record.is_internal == False)
     query = query.order_by(Action.record_id)
 

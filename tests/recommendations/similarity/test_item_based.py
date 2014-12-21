@@ -1,4 +1,4 @@
-from search_rex.recommender.similarity.item_based import\
+from search_rex.recommendations.similarity.item_based import\
     JaccardRecordSimilarity
 import mock
 import math

@@ -1,6 +1,6 @@
-from search_rex.recommender.neighbourhood.item_based import\
+from search_rex.recommendations.neighbourhood.item_based import\
     KNearestRecordNeighbourhood
-from search_rex.recommender.similarity.item_based import\
+from search_rex.recommendations.similarity.item_based import\
     AbstractRecordSimilarity
 import mock
 import math
@@ -72,6 +72,19 @@ def test__get_nbours__records_having_nan_similarity_are_ignored():
     record_sims = {
         target_record: 1.0,
         record_1: float('NaN'),
+    }
+    sut = create_k_nearest_neighbourhood(
+        k=10, doc_sims=record_sims,
+        docs=record_sims.keys())
+
+    assert set(sut.get_neighbours(target_record)) == set()
+
+def test__get_nbours__records_having_0_similarity_are_ignored():
+    target_record = 'caesar'
+    record_1 = 'rome'
+    record_sims = {
+        target_record: 1.0,
+        record_1: 0.0,
     }
     sut = create_k_nearest_neighbourhood(
         k=10, doc_sims=record_sims,

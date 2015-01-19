@@ -1,6 +1,10 @@
 from search_rex.recommendations.data_model.item_based import Preference
 from search_rex.recommendations.data_model.item_based import\
     PersistentRecordDataModel
+from search_rex.recommendations.data_model.item_based import\
+    AbstractRecordDataModel
+from search_rex.recommendations.data_model.item_based import\
+    InMemoryRecordDataModel
 from search_rex.recommendations import queries
 from datetime import datetime
 from search_rex.models import Action
@@ -75,7 +79,7 @@ def test__pers_dm__get_preferences_of_session__unknown_session():
 
     prefs = sut.get_preferences_of_session('nobody')
 
-    assert len(prefs) == 0
+    assert prefs == {}
 
 
 def test__pers_dm__get_preferences_for_record__weights_are_set():
@@ -116,7 +120,7 @@ def test__pers_dm__get_preferences_for_record__unknown_record():
 
     prefs = sut.get_preferences_for_record('random_page')
 
-    assert len(prefs) == 0
+    assert prefs == {}
 
 
 def test__pers_dm__get_preferences_for_records__weights_are_set():
@@ -190,3 +194,104 @@ def test__pers_dm__get_preferences_for_records__preferences_for_each_record():
     assert len(returned_preferences) == 2
     assert any(filter(lambda (r, _): r == record_caesar, returned_preferences))
     assert any(filter(lambda (r, _): r == record_brutus, returned_preferences))
+
+
+def test__in_mem_dm__get_preferences_for_records():
+    preferences = {
+        record_caesar: {
+            session_alice: Preference(1.0, datetime(1999, 1, 1)),
+            session_bob: Preference(2.0, datetime(1999, 1, 1)),
+        },
+        record_brutus: {
+            session_alice: Preference(1.0, datetime(1999, 1, 1)),
+        }
+    }
+    fake_model = AbstractRecordDataModel()
+    fake_model.get_preferences_for_records = mock.Mock(
+        return_value=preferences.iteritems())
+
+    sut = InMemoryRecordDataModel(fake_model)
+
+    for record_id, rec_prefs in sut.get_preferences_for_records():
+        for session_id, pref in rec_prefs.iteritems():
+            assert preferences[record_id][session_id] == pref
+
+
+def test__in_mem_dm__get_preferences_for_record():
+    preferences = {
+        record_caesar: {
+            session_alice: Preference(1.0, datetime(1999, 1, 1)),
+            session_bob: Preference(2.0, datetime(1999, 1, 1)),
+        },
+        record_brutus: {
+            session_alice: Preference(1.0, datetime(1999, 1, 1)),
+        }
+    }
+    fake_model = AbstractRecordDataModel()
+    fake_model.get_preferences_for_records = mock.Mock(
+        return_value=preferences.iteritems())
+
+    sut = InMemoryRecordDataModel(fake_model)
+
+    rec_prefs = sut.get_preferences_for_record(record_caesar)
+    for session_id, pref in rec_prefs.iteritems():
+        assert preferences[record_caesar][session_id] == pref
+
+
+def test__in_mem_dm__get_preferences_for_record__record_not_present():
+    preferences = {
+        record_caesar: {
+            session_alice: Preference(1.0, datetime(1999, 1, 1)),
+            session_bob: Preference(2.0, datetime(1999, 1, 1)),
+        },
+        record_brutus: {
+            session_alice: Preference(1.0, datetime(1999, 1, 1)),
+        }
+    }
+    fake_model = AbstractRecordDataModel()
+    fake_model.get_preferences_for_records = mock.Mock(
+        return_value=preferences.iteritems())
+
+    sut = InMemoryRecordDataModel(fake_model)
+
+    assert sut.get_preferences_for_record('dogma') == {}
+
+
+def test__in_mem_dm__get_preferences_of_session():
+    preferences = {
+        record_caesar: {
+            session_alice: Preference(1.0, datetime(1999, 1, 1)),
+            session_bob: Preference(2.0, datetime(1999, 1, 1)),
+        },
+        record_brutus: {
+            session_alice: Preference(1.0, datetime(1999, 1, 1)),
+        }
+    }
+    fake_model = AbstractRecordDataModel()
+    fake_model.get_preferences_for_records = mock.Mock(
+        return_value=preferences.iteritems())
+
+    sut = InMemoryRecordDataModel(fake_model)
+
+    sess_prefs = sut.get_preferences_of_session(session_alice)
+    for record_id, pref in sess_prefs.iteritems():
+        assert preferences[record_id][session_alice] == pref
+
+
+def test__in_mem_dm__get_preferences_of_session__session_not_present():
+    preferences = {
+        record_caesar: {
+            session_alice: Preference(1.0, datetime(1999, 1, 1)),
+            session_bob: Preference(2.0, datetime(1999, 1, 1)),
+        },
+        record_brutus: {
+            session_alice: Preference(1.0, datetime(1999, 1, 1)),
+        }
+    }
+    fake_model = AbstractRecordDataModel()
+    fake_model.get_preferences_for_records = mock.Mock(
+        return_value=preferences.iteritems())
+
+    sut = InMemoryRecordDataModel(fake_model)
+
+    assert sut.get_preferences_of_session('dogma') == {}

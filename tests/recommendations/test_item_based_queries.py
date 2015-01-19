@@ -1,5 +1,4 @@
 from test_base import BaseTestCase
-from search_rex.core import db
 from datetime import datetime
 from search_rex.services import report_action
 from search_rex.services import set_record_active
@@ -7,11 +6,7 @@ from search_rex.recommendations.queries import get_actions_on_records
 from search_rex.recommendations.queries import get_actions_on_record
 from search_rex.recommendations.queries import get_actions_of_session
 from search_rex.recommendations.queries import get_records
-from search_rex.models import Action
-from search_rex.models import Record
 from search_rex.models import ActionType
-from search_rex.models import SearchQuery
-from search_rex.models import SearchSession
 import os
 
 _cwd = os.path.dirname(os.path.abspath(__file__))
@@ -210,7 +205,6 @@ class GetRecordsTestCase(BaseTestCase):
                 sorted(expected_actions[i][1])
 
     def test__get_actions_on_records__include_internal_records(self):
-        action_type = ActionType.view
         include_internal_records = True
 
         expected_actions = [

@@ -138,23 +138,23 @@ class InMemoryRecordDataModel(AbstractRecordDataModel):
         """
         Retrieves the preferences of the session
         """
-        records = []
-        for record_id, sessions in self.record_session_mat.iteritems():
-            if session_id in sessions:
-                records.append(record_id)
-        return records
+        preferences = {}
+        for record_id, rec_prefs in self.record_session_mat.iteritems():
+            if session_id in rec_prefs:
+                preferences[record_id] = rec_prefs[session_id]
+        return preferences
 
     def get_preferences_for_record(self, record_id):
         """
         Retrieves the preferences for the record
         """
         if record_id not in self.record_session_mat:
-            return []
+            return {}
         return self.record_session_mat[record_id]
 
     def get_preferences_for_records(self):
         """
         Retrieves the preference columns of all records
         """
-        for record_id, sessions in self.record_session_mat.iteritems():
-            yield record_id, sessions
+        for record_id, preferences in self.record_session_mat.iteritems():
+            yield record_id, preferences

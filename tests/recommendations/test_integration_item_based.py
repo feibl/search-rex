@@ -6,7 +6,9 @@ from search_rex.recommendations.data_model.item_based import\
 from search_rex.recommendations.neighbourhood.item_based import\
     KNearestRecordNeighbourhood
 from search_rex.recommendations.similarity.item_based import\
-    JaccardRecordSimilarity
+    JaccardSimilarity
+from search_rex.recommendations.similarity.item_based import\
+    RecordSimilarity
 from search_rex.recommendations.recommenders.item_based import\
     RecordBasedRecommender
 from search_rex.recommendations import Recommender
@@ -21,7 +23,8 @@ def create_recommender(include_internal_records):
     data_model = PersistentRecordDataModel(
         include_internal_records)
     in_mem_dm = InMemoryRecordDataModel(data_model)
-    record_sim = JaccardRecordSimilarity(in_mem_dm)
+    pref_sim = JaccardSimilarity()
+    record_sim = RecordSimilarity(in_mem_dm, pref_sim)
     record_nhood = KNearestRecordNeighbourhood(10, in_mem_dm, record_sim)
     record_based_recsys = RecordBasedRecommender(
         data_model, record_nhood, record_sim)

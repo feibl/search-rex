@@ -29,11 +29,13 @@ def create_recommender_system(
             include_internal_records)
 
         in_mem_dm = item_based_dm.InMemoryRecordDataModel(data_model)
-        sim = item_based_sim.JaccardRecordSimilarity(in_mem_dm)
+        pref_sim = item_based_sim.JaccardSimilarity()
+        sim = item_based_sim.RecordSimilarity(in_mem_dm, pref_sim)
         nhood = item_based_nhood.KNearestRecordNeighbourhood(
             25, in_mem_dm, sim)
 
-        return item_based_rec.RecordBasedRecommender(data_model, nhood, sim)
+        return item_based_rec.RecordBasedRecommender(
+            data_model, nhood, sim)
 
     def q_based_recsys_factory(include_internal_records):
         data_model = case_based_dm.QueryBasedDataModel(

@@ -3,10 +3,10 @@ from search_rex.core import db
 from datetime import datetime
 from search_rex.services import report_action
 from search_rex.services import set_record_active
-from search_rex.recommendations.queries import get_records
+from search_rex.recommendations.queries import get_actions_on_records
 from search_rex.recommendations.queries import get_sessions_that_used_record
 from search_rex.recommendations.queries import get_seen_records
-from search_rex.recommendations.queries import get_record_columns
+from search_rex.recommendations.queries import get_records
 from search_rex.models import Action
 from search_rex.models import Record
 from search_rex.models import ActionType
@@ -47,6 +47,8 @@ is_active = {
     record_cleopatra: True,
     record_inactive: False,
 }
+
+time_created = datetime(1999, 1, 1)
 
 
 def import_test_data():
@@ -171,34 +173,37 @@ class GetRecordsTestCase(BaseTestCase):
             record_id=record_id, action_type=action_type))
         assert sorted(sessions_that_seen) == sorted(expected_sessions)
 
-    def test__get_record_columns__view_action__do_not_include_internal_records(self):
+    def test__get_actions_on_records__view_action__do_not_include_internal_records(self):
         action_type = ActionType.view
         include_internal_records = False
 
-        expected_columns = [
+        expected_sessions = [
             (record_caesar, [session_alice, session_bob, session_dave]),
             (record_brutus, [session_alice, session_bob]),
             (record_cleopatra, [session_bob, session_carol]),
             (record_napoleon, [session_eric]),
         ]
 
-        returned_columns = list(get_record_columns(
+        returned_actions = list(get_actions_on_records(
             action_type, include_internal_records))
 
-        expected_columns = sorted(expected_columns)
-        returned_columns = sorted(returned_columns)
+        expected_sessions = sorted(expected_sessions)
+        returned_actions = sorted(returned_actions)
 
-        assert len(returned_columns) == len(expected_columns)
-        for i in range(len(expected_columns)):
-            assert returned_columns[i][0] == expected_columns[i][0]
-            assert sorted(returned_columns[i][1]) ==\
-                sorted(expected_columns[i][1])
+        assert len(returned_actions) == len(expected_sessions)
+        for i in range(len(expected_sessions)):
+            assert returned_actions[i][0] == expected_sessions[i][0]
+            session_ids = [
+                action.session_id for action in returned_actions[i][1]
+            ]
+            assert sorted(session_ids) ==\
+                sorted(expected_sessions[i][1])
 
-    def test__get_record_columns__include_internal_records(self):
+    def test__get_actions_on_records__include_internal_records(self):
         action_type = ActionType.view
         include_internal_records = True
 
-        expected_columns = [
+        expected_sessions = [
             (record_caesar, [session_alice, session_bob, session_dave]),
             (record_brutus, [session_alice, session_bob]),
             (record_cleopatra, [session_bob, session_carol]),
@@ -206,37 +211,43 @@ class GetRecordsTestCase(BaseTestCase):
             (record_secrets_of_rome, [session_dave]),
         ]
 
-        returned_columns = list(get_record_columns(
+        returned_actions = list(get_actions_on_records(
             action_type, include_internal_records))
 
-        expected_columns = sorted(expected_columns)
-        returned_columns = sorted(returned_columns)
+        expected_sessions = sorted(expected_sessions)
+        returned_actions = sorted(returned_actions)
 
-        assert len(returned_columns) == len(expected_columns)
-        for i in range(len(expected_columns)):
-            assert returned_columns[i][0] == expected_columns[i][0]
-            assert sorted(returned_columns[i][1]) ==\
-                sorted(expected_columns[i][1])
+        assert len(returned_actions) == len(expected_sessions)
+        for i in range(len(expected_sessions)):
+            assert returned_actions[i][0] == expected_sessions[i][0]
+            session_ids = [
+                action.session_id for action in returned_actions[i][1]
+            ]
+            assert sorted(session_ids) ==\
+                sorted(expected_sessions[i][1])
 
-    def test__get_record_columns__copy_action__do_not_include_internal_records(self):
+    def test__get_actions_on_records__copy_action__do_not_include_internal_records(self):
         action_type = ActionType.copy
         include_internal_records = False
 
-        expected_columns = [
+        expected_sessions = [
             (record_caesar, [session_alice, session_dave]),
             (record_brutus, [session_alice, session_bob]),
             (record_cleopatra, [session_bob]),
             (record_napoleon, [session_dave, session_eric]),
         ]
 
-        returned_columns = list(get_record_columns(
+        returned_actions = list(get_actions_on_records(
             action_type, include_internal_records))
 
-        expected_columns = sorted(expected_columns)
-        returned_columns = sorted(returned_columns)
+        expected_sessions = sorted(expected_sessions)
+        returned_actions = sorted(returned_actions)
 
-        assert len(returned_columns) == len(expected_columns)
-        for i in range(len(expected_columns)):
-            assert returned_columns[i][0] == expected_columns[i][0]
-            assert sorted(returned_columns[i][1]) ==\
-                sorted(expected_columns[i][1])
+        assert len(returned_actions) == len(expected_sessions)
+        for i in range(len(expected_sessions)):
+            assert returned_actions[i][0] == expected_sessions[i][0]
+            session_ids = [
+                action.session_id for action in returned_actions[i][1]
+            ]
+            assert sorted(session_ids) ==\
+                sorted(expected_sessions[i][1])

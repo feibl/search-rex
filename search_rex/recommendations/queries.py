@@ -117,13 +117,14 @@ def get_sessions_that_used_record(record_id, action_type):
         yield session_id
 
 
-def get_record_columns(action_type, include_internal_records):
+def get_actions_on_records(action_type, include_internal_records):
     """
-    Retrieves the Records and the list of sessions that seen it
+    Retrieves the Records and the list of actions that have been performed
+    on them
     """
     session = db.session
 
-    query = session.query(Action.session_id, Action.record_id)
+    query = session.query(Action)
     query = query.join(Action.record)
     query = query.filter(
         Action.action_type == action_type,
@@ -132,8 +133,10 @@ def get_record_columns(action_type, include_internal_records):
         query = query.filter(Record.is_internal == False)
     query = query.order_by(Action.record_id)
 
-    for record_id, group in groupby(
-            query, key=lambda entry: entry.record_id):
+    for record_id, actions in groupby(
+            query, key=lambda action: action.record_id):
         yield (
-            record_id, [member.session_id for member in group]
+            record_id, [
+                action for action in actions
+            ]
         )

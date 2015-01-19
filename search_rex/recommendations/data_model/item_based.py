@@ -26,19 +26,6 @@ class AbstractRecordBasedDataModel(object):
     def get_record_columns(self):
         raise NotImplementedError()
 
-    def get_preferences_of_session(self, session_id):
-        """
-        Retrieves the preferences that have been recorded in a session
-        """
-        raise NotImplementedError()
-
-    def get_preferences_for_record(self, record_id):
-        """
-        Retrieves the preferences that have been recorded for a particular
-        record
-        """
-        raise NotImplementedError()
-
 
 class RecordBasedDataModel(AbstractRecordBasedDataModel):
     """
@@ -71,9 +58,9 @@ class RecordBasedDataModel(AbstractRecordBasedDataModel):
             record_id, self.action_type)
 
     def get_record_columns(self):
-
-        return queries.get_record_columns(
-            self.action_type, self.include_internal_records)
+        for record_id, actions in queries.get_actions_on_records(
+                self.action_type, self.include_internal_records):
+            yield (record_id, [action.session_id for action in actions])
 
 
 class InMemoryRecordBasedDataModel(AbstractRecordBasedDataModel):

@@ -4,8 +4,8 @@ from datetime import datetime
 from search_rex.services import report_action
 from search_rex.services import set_record_active
 from search_rex.recommendations.queries import get_actions_on_records
-from search_rex.recommendations.queries import get_sessions_that_used_record
-from search_rex.recommendations.queries import get_seen_records
+from search_rex.recommendations.queries import get_actions_on_record
+from search_rex.recommendations.queries import get_actions_of_session
 from search_rex.recommendations.queries import get_records
 from search_rex.models import Action
 from search_rex.models import Record
@@ -112,142 +112,149 @@ class GetRecordsTestCase(BaseTestCase):
 
     def test__get_viewed_records(self):
         session_id = session_alice
-        action_type = ActionType.view
 
-        expected_records = [record_caesar, record_brutus]
-
-        viewed_records = list(get_seen_records(
-            session_id=session_id, action_type=action_type))
-        assert sorted(viewed_records) == sorted(expected_records)
-
-    def test__get_copied_records(self):
-        session_id = session_alice
-        action_type = ActionType.copy
-
-        expected_records = [
-            record_caesar, record_brutus, record_secrets_of_rome]
-
-        copied_records = list(get_seen_records(
-            session_id=session_id, action_type=action_type))
-        assert sorted(copied_records) == sorted(expected_records)
-
-    def test__get_that_records__unknown_session__empty_list(self):
-        action_type = ActionType.view
-        session_id = 'mallory'
-
-        expected_records = []
-
-        seen_records = list(get_seen_records(
-            session_id=session_id, action_type=action_type))
-        assert sorted(seen_records) == sorted(expected_records)
-
-    def test__sessions_that_viewed_records(self):
-        action_type = ActionType.view
-        record_id = record_caesar
-
-        expected_sessions = [
-            session_alice, session_bob, session_dave]
-
-        sessions_that_viewed = list(get_sessions_that_used_record(
-            record_id=record_id, action_type=action_type))
-        assert sorted(sessions_that_viewed) == sorted(expected_sessions)
-
-    def test__sessions_that_copied_records(self):
-        action_type = ActionType.copy
-        record_id = record_caesar
-
-        expected_sessions = [
-            session_alice, session_dave]
-
-        sessions_that_copied = list(get_sessions_that_used_record(
-            record_id=record_id, action_type=action_type))
-        assert sorted(sessions_that_copied) == sorted(expected_sessions)
-
-    def test__sessions_that_seen_record__unknown_record__empty_list(self):
-        action_type = ActionType.view
-        record_id = 'dogma'
-
-        expected_sessions = []
-
-        sessions_that_seen = list(get_sessions_that_used_record(
-            record_id=record_id, action_type=action_type))
-        assert sorted(sessions_that_seen) == sorted(expected_sessions)
-
-    def test__get_actions_on_records__view_action__do_not_include_internal_records(self):
-        action_type = ActionType.view
-        include_internal_records = False
-
-        expected_sessions = [
-            (record_caesar, [session_alice, session_bob, session_dave]),
-            (record_brutus, [session_alice, session_bob]),
-            (record_cleopatra, [session_bob, session_carol]),
-            (record_napoleon, [session_eric]),
+        expected_actions = [
+            (record_caesar, ActionType.view),
+            (record_brutus, ActionType.view),
+            (record_caesar, ActionType.copy),
+            (record_brutus, ActionType.copy),
+            (record_secrets_of_rome, ActionType.copy),
         ]
 
-        returned_actions = list(get_actions_on_records(
-            action_type, include_internal_records))
+        returned_actions = list(get_actions_of_session(session_id=session_id))
 
-        expected_sessions = sorted(expected_sessions)
+        returned_actions = [
+            (action.record_id, action.action_type) for action in
+            returned_actions
+        ]
+
+        assert sorted(returned_actions) == sorted(expected_actions)
+
+    def test__get_that_records__unknown_session__empty_list(self):
+        session_id = 'mallory'
+
+        returned_actions = list(get_actions_of_session(session_id=session_id))
+
+        assert len(returned_actions) == 0
+
+    def test__sessions_that_viewed_records(self):
+        record_id = record_caesar
+
+        expected_actions = [
+            (session_alice, ActionType.view),
+            (session_bob, ActionType.view),
+            (session_dave, ActionType.view),
+            (session_alice, ActionType.copy),
+            (session_dave, ActionType.copy),
+        ]
+
+        returned_actions = list(get_actions_on_record(record_id=record_id))
+
+        returned_actions = [
+            (action.session_id, action.action_type) for action in
+            returned_actions
+        ]
+
+        assert sorted(expected_actions) == sorted(returned_actions)
+
+    def test__sessions_that_seen_record__unknown_record__empty_list(self):
+        record_id = 'dogma'
+
+        returned_actions = list(get_actions_on_record(record_id=record_id))
+
+        assert len(returned_actions) == 0
+
+    def test__get_actions_on_records__do_not_include_internal_records(self):
+        include_internal_records = False
+
+        expected_actions = [
+            (record_caesar, [
+                (session_alice, ActionType.view),
+                (session_bob, ActionType.view),
+                (session_dave, ActionType.view),
+                (session_alice, ActionType.copy),
+                (session_dave, ActionType.copy),
+            ]),
+            (record_brutus, [
+                (session_alice, ActionType.view),
+                (session_bob, ActionType.view),
+                (session_alice, ActionType.copy),
+                (session_bob, ActionType.copy),
+            ]),
+            (record_cleopatra, [
+                (session_bob, ActionType.view),
+                (session_carol, ActionType.view),
+                (session_bob, ActionType.copy),
+            ]),
+            (record_napoleon, [
+                (session_eric, ActionType.view),
+                (session_dave, ActionType.copy),
+                (session_eric, ActionType.copy),
+            ]),
+        ]
+
+        returned_actions = list(
+            get_actions_on_records(include_internal_records))
+
+        expected_actions = sorted(expected_actions)
         returned_actions = sorted(returned_actions)
 
-        assert len(returned_actions) == len(expected_sessions)
-        for i in range(len(expected_sessions)):
-            assert returned_actions[i][0] == expected_sessions[i][0]
-            session_ids = [
-                action.session_id for action in returned_actions[i][1]
+        assert len(returned_actions) == len(expected_actions)
+        for i in range(len(expected_actions)):
+            assert returned_actions[i][0] == expected_actions[i][0]
+            actions_on_record = [
+                (action.session_id, action.action_type) for action in
+                returned_actions[i][1]
             ]
-            assert sorted(session_ids) ==\
-                sorted(expected_sessions[i][1])
+            assert sorted(actions_on_record) ==\
+                sorted(expected_actions[i][1])
 
     def test__get_actions_on_records__include_internal_records(self):
         action_type = ActionType.view
         include_internal_records = True
 
-        expected_sessions = [
-            (record_caesar, [session_alice, session_bob, session_dave]),
-            (record_brutus, [session_alice, session_bob]),
-            (record_cleopatra, [session_bob, session_carol]),
-            (record_napoleon, [session_eric]),
-            (record_secrets_of_rome, [session_dave]),
+        expected_actions = [
+            (record_caesar, [
+                (session_alice, ActionType.view),
+                (session_bob, ActionType.view),
+                (session_dave, ActionType.view),
+                (session_alice, ActionType.copy),
+                (session_dave, ActionType.copy),
+            ]),
+            (record_brutus, [
+                (session_alice, ActionType.view),
+                (session_bob, ActionType.view),
+                (session_alice, ActionType.copy),
+                (session_bob, ActionType.copy),
+            ]),
+            (record_cleopatra, [
+                (session_bob, ActionType.view),
+                (session_carol, ActionType.view),
+                (session_bob, ActionType.copy),
+            ]),
+            (record_napoleon, [
+                (session_eric, ActionType.view),
+                (session_dave, ActionType.copy),
+                (session_eric, ActionType.copy),
+            ]),
+            (record_secrets_of_rome, [
+                (session_alice, ActionType.copy),
+                (session_dave, ActionType.view),
+                (session_dave, ActionType.copy),
+            ]),
         ]
+        returned_actions = list(
+            get_actions_on_records(include_internal_records))
 
-        returned_actions = list(get_actions_on_records(
-            action_type, include_internal_records))
-
-        expected_sessions = sorted(expected_sessions)
+        expected_actions = sorted(expected_actions)
         returned_actions = sorted(returned_actions)
 
-        assert len(returned_actions) == len(expected_sessions)
-        for i in range(len(expected_sessions)):
-            assert returned_actions[i][0] == expected_sessions[i][0]
-            session_ids = [
-                action.session_id for action in returned_actions[i][1]
+        assert len(returned_actions) == len(expected_actions)
+        for i in range(len(expected_actions)):
+            assert returned_actions[i][0] == expected_actions[i][0]
+            actions_on_record = [
+                (action.session_id, action.action_type) for action in
+                returned_actions[i][1]
             ]
-            assert sorted(session_ids) ==\
-                sorted(expected_sessions[i][1])
-
-    def test__get_actions_on_records__copy_action__do_not_include_internal_records(self):
-        action_type = ActionType.copy
-        include_internal_records = False
-
-        expected_sessions = [
-            (record_caesar, [session_alice, session_dave]),
-            (record_brutus, [session_alice, session_bob]),
-            (record_cleopatra, [session_bob]),
-            (record_napoleon, [session_dave, session_eric]),
-        ]
-
-        returned_actions = list(get_actions_on_records(
-            action_type, include_internal_records))
-
-        expected_sessions = sorted(expected_sessions)
-        returned_actions = sorted(returned_actions)
-
-        assert len(returned_actions) == len(expected_sessions)
-        for i in range(len(expected_sessions)):
-            assert returned_actions[i][0] == expected_sessions[i][0]
-            session_ids = [
-                action.session_id for action in returned_actions[i][1]
-            ]
-            assert sorted(session_ids) ==\
-                sorted(expected_sessions[i][1])
+            assert sorted(actions_on_record) ==\
+                sorted(expected_actions[i][1])

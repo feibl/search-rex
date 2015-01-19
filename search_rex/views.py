@@ -6,8 +6,6 @@ from flask import current_app
 from flask.ext.restful.inputs import datetime_from_iso8601
 from functools import wraps
 
-from models import ActionType
-
 from services import report_view_action
 from services import report_copy_action
 
@@ -15,14 +13,6 @@ from .recommendations import get_recommender
 
 
 rec_api = Blueprint('rec_api', __name__)
-
-
-def get_view_action_recommender(include_internal_records):
-    return get_recommender(ActionType.view, include_internal_records)
-
-
-def get_copy_action_recommender(include_internal_records):
-    return get_recommender(ActionType.copy, include_internal_records)
 
 
 def api_key_required(view_function):
@@ -106,20 +96,19 @@ def copy():
     return jsonify(success=True)
 
 
-@rec_api.route('/api/inspired_by_your_view_history', methods=['GET'])
+@rec_api.route('/api/inspired_by_your_history', methods=['GET'])
 @api_key_required
-def inspired_by_your_view_history():
+def inspired_by_your_history():
     """
-    Gets a list of recommended records based on a session's history of views
+    Gets a list of recommended records based on a session's history
     """
-
     include_internal_records = parse_arg(
         request, 'include_internal_records', required=True, type=bool)
     session_id = parse_arg(request, 'session_id', required=True)
     max_num_recs = parse_arg(
         request, 'max_num_recs', required=False, type=int)
 
-    recommender = get_view_action_recommender(include_internal_records)
+    recommender = get_recommender(include_internal_records)
     recs = recommender.recommend_from_history(
         session_id=session_id, max_num_recs=max_num_recs)
 
@@ -128,33 +117,11 @@ def inspired_by_your_view_history():
     ])
 
 
-@rec_api.route('/api/inspired_by_your_copy_history', methods=['GET'])
+@rec_api.route('/api/other_users_also_used', methods=['GET'])
 @api_key_required
-def inspired_by_your_copy_history():
+def other_users_also_used():
     """
-    Gets a list of recommended records based on a session's history of copies
-    """
-
-    include_internal_records = parse_arg(
-        request, 'include_internal_records', required=True, type=bool)
-    session_id = parse_arg(request, 'session_id', required=True)
-    max_num_recs = parse_arg(
-        request, 'max_num_recs', required=False, type=int)
-
-    recommender = get_copy_action_recommender(include_internal_records)
-    recs = recommender.recommend_from_history(
-        session_id=session_id, max_num_recs=max_num_recs)
-
-    return jsonify(results=[
-        {'record_id': record_id, 'score': score} for record_id, score in recs
-    ])
-
-
-@rec_api.route('/api/other_users_also_viewed', methods=['GET'])
-@api_key_required
-def other_users_also_viewed():
-    """
-    Returns a list of records that were viewed together with the given one
+    Returns a list of records that were used together with the given one
     """
 
     include_internal_records = parse_arg(
@@ -163,40 +130,18 @@ def other_users_also_viewed():
     max_num_recs = parse_arg(
         request, 'max_num_recs', required=False, type=int)
 
-    recommender = get_view_action_recommender(include_internal_records)
+    recommender = get_recommender(include_internal_records)
     recs = recommender.recommend_similar_records(
         record_id, max_num_recs=max_num_recs)
 
     return jsonify(results=[
-        {'record_id': record_id, 'score': score} for record_id, score in recs
+        {'record_id': r_id, 'score': score} for r_id, score in recs
     ])
 
 
-@rec_api.route('/api/other_users_also_copied', methods=['GET'])
+@rec_api.route('/api/recommended_search_results', methods=['GET'])
 @api_key_required
-def other_users_also_copied():
-    """
-    Returns a list of records that were copied together with the given one
-    """
-
-    include_internal_records = parse_arg(
-        request, 'include_internal_records', required=True, type=bool)
-    record_id = parse_arg(request, 'record_id', required=True)
-    max_num_recs = parse_arg(
-        request, 'max_num_recs', required=False, type=int)
-
-    recommender = get_copy_action_recommender(include_internal_records)
-    recs = recommender.recommend_similar_records(
-        record_id, max_num_recs=max_num_recs)
-
-    return jsonify(results=[
-        {'record_id': record_id, 'score': score} for record_id, score in recs
-    ])
-
-
-@rec_api.route('/api/viewed_results_for_query', methods=['GET'])
-@api_key_required
-def viewed_results_for_query():
+def recommended_search_results():
     """
     Returns a list of records that were viewed after entering the query
     """
@@ -207,27 +152,7 @@ def viewed_results_for_query():
     max_num_recs = parse_arg(
         request, 'max_num_recs', required=False, type=int)
 
-    recommender = get_view_action_recommender(include_internal_records)
-    recs = recommender.recommend_search_results(
-        query_string, max_num_recs=max_num_recs)
-
-    return jsonify(results=[rec.serialize() for rec in recs])
-
-
-@rec_api.route('/api/copied_results_for_query', methods=['GET'])
-@api_key_required
-def copied_results_for_query():
-    """
-    Returns a list of records that were copied after entering the query
-    """
-
-    include_internal_records = parse_arg(
-        request, 'include_internal_records', required=True, type=bool)
-    query_string = parse_arg(request, 'query_string', required=True)
-    max_num_recs = parse_arg(
-        request, 'max_num_recs', required=False, type=int)
-
-    recommender = get_copy_action_recommender(include_internal_records)
+    recommender = get_recommender(include_internal_records)
     recs = recommender.recommend_search_results(
         query_string, max_num_recs=max_num_recs)
 
@@ -243,7 +168,7 @@ def similar_queries():
 
     query_string = parse_arg(request, 'query_string', required=True)
     community_id = 3
-    similar_queries = get_copy_action_recommender(True).get_similar_queries(
+    similar_queries = get_recommender(True).get_similar_queries(
         query_string, community_id)
 
     return jsonify(

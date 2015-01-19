@@ -86,38 +86,35 @@ def get_records(include_internal_records):
         yield record_id
 
 
-def get_seen_records(session_id, action_type):
+def get_actions_of_session(session_id):
     """
-    Retrieves the records that the session interacted with
+    Retrieves the actions that have been recorded in the session
     """
     session = db.session
 
-    query = session.query(Action.record_id)
+    query = session.query(Action)
     query = query.join(Action.record)
     query = query.filter(
-        Action.action_type == action_type,
         Action.session_id == session_id,
         Record.active == True).all()
 
-    for record_id, in query:
-        yield record_id
+    for action in query:
+        yield action
 
 
-def get_sessions_that_used_record(record_id, action_type):
+def get_actions_on_record(record_id):
     """
-    Retrieves the session that interacted with the record
+    Retrieves the actions that have been performed on the record
     """
     session = db.session
 
-    query = session.query(Action.session_id).filter(
-        Action.record_id == record_id,
-        Action.action_type == action_type)
+    query = session.query(Action).filter(Action.record_id == record_id)
 
-    for session_id, in query:
-        yield session_id
+    for action in query:
+        yield action
 
 
-def get_actions_on_records(action_type, include_internal_records):
+def get_actions_on_records(include_internal_records):
     """
     Retrieves the Records and the list of actions that have been performed
     on them
@@ -127,7 +124,6 @@ def get_actions_on_records(action_type, include_internal_records):
     query = session.query(Action)
     query = query.join(Action.record)
     query = query.filter(
-        Action.action_type == action_type,
         Record.active == True)
     if not include_internal_records:
         query = query.filter(Record.is_internal == False)

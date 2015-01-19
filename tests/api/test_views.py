@@ -3,9 +3,6 @@ from datetime import datetime
 from json import loads
 
 
-TEST_COMMUNITY = 'test_community'
-
-
 URL = '/api/'
 
 
@@ -89,11 +86,6 @@ search_parameters = dict(
     query_string='hello world',
 )
 
-recommend_parameters = dict(
-    community_id=TEST_COMMUNITY,
-    query_string='hello world',
-)
-
 similar_q_parameters = dict(
     query_string='hello world',
 )
@@ -113,13 +105,9 @@ set_active_parameters = dict(
 
 create_required_pms_tests('view', action_parameters)
 create_required_pms_tests('copy', action_parameters)
-create_required_pms_tests('inspired_by_your_view_history', inspired_parameters)
-create_required_pms_tests('inspired_by_your_copy_history', inspired_parameters)
-create_required_pms_tests('other_users_also_viewed', others_parameters)
-create_required_pms_tests('other_users_also_copied', others_parameters)
-create_required_pms_tests('viewed_results_for_query', search_parameters)
-create_required_pms_tests('copied_results_for_query', search_parameters)
-create_required_pms_tests('recommend', recommend_parameters)
+create_required_pms_tests('inspired_by_your_history', inspired_parameters)
+create_required_pms_tests('other_users_also_used', others_parameters)
+create_required_pms_tests('recommended_search_results', search_parameters)
 create_required_pms_tests('similar_queries', similar_q_parameters)
 create_required_pms_tests('import_record_similarity', import_sim_parameters)
 create_required_pms_tests('set_record_active', set_active_parameters)
@@ -141,13 +129,9 @@ def create_wrong_api_key_test(view_to_test, parameters):
 
 create_wrong_api_key_test('view', action_parameters)
 create_wrong_api_key_test('copy', action_parameters)
-create_wrong_api_key_test('recommend', recommend_parameters)
 create_wrong_api_key_test('similar_queries', similar_q_parameters)
-create_wrong_api_key_test('inspired_by_your_view_history', inspired_parameters)
-create_wrong_api_key_test('inspired_by_your_copy_history', inspired_parameters)
-create_wrong_api_key_test('other_users_also_viewed', others_parameters)
-create_wrong_api_key_test('other_users_also_copied', others_parameters)
-create_wrong_api_key_test('viewed_results_for_query', search_parameters)
-create_wrong_api_key_test('copied_results_for_query', search_parameters)
+create_wrong_api_key_test('inspired_by_your_history', inspired_parameters)
+create_wrong_api_key_test('other_users_also_used', others_parameters)
+create_wrong_api_key_test('recommended_search_results', search_parameters)
 create_wrong_api_key_test('import_record_similarity', import_sim_parameters)
 create_wrong_api_key_test('set_record_active', set_active_parameters)

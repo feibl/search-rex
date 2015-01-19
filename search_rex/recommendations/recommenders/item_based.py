@@ -39,15 +39,15 @@ class RecordBasedRecommender(AbstractRecordBasedRecommender):
         Recommends records based on the recent actions in the session
         """
         candidates = defaultdict(float)
-        seen_records = list(self.data_model.get_seen_records(session_id))
-        print('Seen records by {}: {}'.format(session_id, seen_records))
-        for seen_record in seen_records:
-            for nbour in self.record_nhood.get_neighbours(seen_record):
-                if nbour in seen_records:
+        preferences = self.data_model.get_preferences_of_session(session_id)
+        print('Seen records by {}: {}'.format(session_id, preferences))
+        for record, _ in preferences.iteritems():
+            for nbour in self.record_nhood.get_neighbours(record):
+                if nbour in preferences:
                     continue
 
                 similarity = self.record_sim.get_similarity(
-                    seen_record, nbour)
+                    record, nbour)
                 if not math.isnan(similarity):
                     candidates[nbour] += similarity
 

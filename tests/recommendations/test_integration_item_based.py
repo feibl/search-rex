@@ -1,14 +1,13 @@
 from test_base import BaseTestCase
-from search_rex.core import db
 from datetime import datetime
 from search_rex.services import report_view_action
 from search_rex.services import report_copy_action
 from search_rex.services import set_record_active
 from search_rex.models import ActionType
 from search_rex.recommendations.data_model.item_based import\
-    InMemoryRecordBasedDataModel
+    InMemoryRecordDataModel
 from search_rex.recommendations.data_model.item_based import\
-    RecordBasedDataModel
+    PersistentRecordDataModel
 from search_rex.recommendations.neighbourhood.item_based import\
     KNearestRecordNeighbourhood
 from search_rex.recommendations.similarity.item_based import\
@@ -127,7 +126,7 @@ def import_test_data(views, copies):
         for record_id in viewed_records:
             report_view_action(
                 record_id=record_id,
-                timestamp=datetime(1999,1,1),
+                timestamp=datetime(1999, 1, 1),
                 session_id=session_id,
                 is_internal_record=is_internal[record_id])
 
@@ -135,7 +134,7 @@ def import_test_data(views, copies):
         for record_id in copied_records:
             report_copy_action(
                 record_id=record_id,
-                timestamp=datetime(1999,1,1),
+                timestamp=datetime(1999, 1, 1),
                 session_id=session_id,
                 is_internal_record=is_internal[record_id])
 
@@ -144,9 +143,9 @@ def import_test_data(views, copies):
 
 
 def create_recommender(action_type, include_internal_records):
-    data_model = RecordBasedDataModel(
+    data_model = PersistentRecordDataModel(
         action_type, include_internal_records)
-    in_mem_dm = InMemoryRecordBasedDataModel(data_model)
+    in_mem_dm = InMemoryRecordDataModel(data_model)
     record_sim = JaccardRecordSimilarity(in_mem_dm)
     record_nhood = KNearestRecordNeighbourhood(10, in_mem_dm, record_sim)
     record_based_recsys = RecordBasedRecommender(

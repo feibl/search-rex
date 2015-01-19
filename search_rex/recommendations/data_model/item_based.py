@@ -1,33 +1,45 @@
 from .. import queries
+from search_rex.models import ActionType
 
 
-class AbstractRecordBasedDataModel(object):
+class Preference(object):
+    def __init__(self, value, preference_time):
+        self.value = value
+        self.preference_time = preference_time
+
+
+class AbstractRecordDataModel(object):
     """
     A wrapper around a concrete DataModel whose methods do not include
     the action_type and the include_internal_records as parameters
     """
 
     def get_records(self):
-        '''Gets an iterator over all the records'''
-        raise NotImplementedError()
-
-    def get_seen_records(self, session_id):
         """
-        Retrieves the records that the session interacted with
+        Gets an iterator over all the records
         """
         raise NotImplementedError()
 
-    def get_sessions_that_seen_record(self, record_id):
+    def get_preferences_of_session(self, session_id):
         """
-        Retrieves the session that interacted with the record
+        Retrieves the preferences of the session
         """
         raise NotImplementedError()
 
-    def get_record_columns(self):
+    def get_preferences_for_record(self, record_id):
+        """
+        Retrieves the preferences for the record
+        """
+        raise NotImplementedError()
+
+    def get_preferences_for_records(self):
+        """
+        Retrieves the preference columns of all records
+        """
         raise NotImplementedError()
 
 
-class RecordBasedDataModel(AbstractRecordBasedDataModel):
+class PersistentRecordDataModel(AbstractRecordDataModel):
     """
     A wrapper around a concrete DataModel whose methods do not include
     the action_type and the include_internal_records as parameters
@@ -36,34 +48,71 @@ class RecordBasedDataModel(AbstractRecordBasedDataModel):
     """
 
     def __init__(
-            self, action_type, include_internal_records):
-        self.action_type = action_type
+            self, include_internal_records, copy_action_weight=2.0,
+            view_action_weight=1.0):
         self.include_internal_records = include_internal_records
+        self.view_action_weight = view_action_weight
+        self.copy_action_weight = copy_action_weight
 
     def get_records(self):
-        '''Gets an iterator over all the records'''
+        """
+        Gets an iterator over all the records
+        """
         return queries.get_records(self.include_internal_records)
 
-    def get_seen_records(self, session_id):
-        """
-        Retrieves the records that the session interacted with
-        """
-        return queries.get_seen_records(session_id, self.action_type)
+    def __get_preferences_from_actions(self, actions, key_func):
+        preferences = {}
+        for action in actions:
+            key = key_func(action)
+            if key not in preferences:
+                pref_value = 0.0
+                if action.action_type == ActionType.view:
+                    pref_value = self.view_action_weight
+                elif action.action_type == ActionType.copy:
+                    pref_value = self.copy_action_weight
 
-    def get_sessions_that_seen_record(self, record_id):
-        """
-        Retrieves the session that interacted with the record
-        """
-        return queries.get_sessions_that_used_record(
-            record_id, self.action_type)
+                preferences[key] = Preference(
+                    value=pref_value, preference_time=action.time_created)
 
-    def get_record_columns(self):
+            elif action.action_type == ActionType.copy:
+                preferences[key].value = self.copy_action_weight
+                preferences[key].preference_time = action.time_created
+
+        return preferences
+
+    def get_preferences_of_session(self, session_id):
+        """
+        Retrieves the preferences of the session
+        """
+        actions = queries.get_actions_of_session(session_id)
+        preferences = self.__get_preferences_from_actions(
+            actions, lambda action: action.record_id)
+
+        return preferences
+
+    def get_preferences_for_record(self, record_id):
+        """
+        Retrieves the preferences for the record
+        """
+        actions = queries.get_actions_on_record(record_id)
+        preferences = self.__get_preferences_from_actions(
+            actions, lambda action: action.session_id)
+
+        return preferences
+
+    def get_preferences_for_records(self):
+        """
+        Retrieves the preference columns of all records
+        """
         for record_id, actions in queries.get_actions_on_records(
-                self.action_type, self.include_internal_records):
-            yield (record_id, [action.session_id for action in actions])
+                self.include_internal_records):
+            preferences = self.__get_preferences_from_actions(
+                actions, lambda action: action.session_id)
+
+            yield (record_id, preferences)
 
 
-class InMemoryRecordBasedDataModel(AbstractRecordBasedDataModel):
+class InMemoryRecordDataModel(AbstractRecordDataModel):
 
     def __init__(self, data_model):
         self.data_model = data_model
@@ -73,22 +122,21 @@ class InMemoryRecordBasedDataModel(AbstractRecordBasedDataModel):
     def init_model(self):
         record_session_mat = {}
 
-        for record_id, sessions in self.data_model.get_record_columns():
-            record_session_mat[record_id] = sessions
+        for record_id, preferences in\
+                self.data_model.get_preferences_for_records():
+            record_session_mat[record_id] = preferences
 
         self.record_session_mat = record_session_mat
 
     def get_records(self):
+        """
+        Gets an iterator over all the records
+        """
         return self.record_session_mat.keys()
 
-    def get_sessions_that_seen_record(self, record_id):
-        if record_id not in self.record_session_mat:
-            return []
-        return self.record_session_mat[record_id]
-
-    def get_seen_records(self, session_id):
+    def get_preferences_of_session(self, session_id):
         """
-        Retrieves the records that the session interacted with
+        Retrieves the preferences of the session
         """
         records = []
         for record_id, sessions in self.record_session_mat.iteritems():
@@ -96,6 +144,17 @@ class InMemoryRecordBasedDataModel(AbstractRecordBasedDataModel):
                 records.append(record_id)
         return records
 
-    def get_record_columns(self):
+    def get_preferences_for_record(self, record_id):
+        """
+        Retrieves the preferences for the record
+        """
+        if record_id not in self.record_session_mat:
+            return []
+        return self.record_session_mat[record_id]
+
+    def get_preferences_for_records(self):
+        """
+        Retrieves the preference columns of all records
+        """
         for record_id, sessions in self.record_session_mat.iteritems():
             yield record_id, sessions

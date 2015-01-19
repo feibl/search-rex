@@ -1,4 +1,5 @@
 from .. import queries
+from search_rex.models import ActionType
 
 
 class AbstractQueryBasedDataModel(object):
@@ -27,9 +28,9 @@ class QueryBasedDataModel(AbstractQueryBasedDataModel):
     """
 
     def __init__(
-            self, action_type, include_internal_records,
+            self, include_internal_records,
             half_life_in_days=150, life_span_in_days=300):
-        self.action_type = action_type
+        self.action_type = ActionType.view
         self.include_internal_records = include_internal_records
         self.half_life_in_days = half_life_in_days
         self.life_span_in_days = life_span_in_days

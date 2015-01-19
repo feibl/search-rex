@@ -5,8 +5,11 @@ from search_rex.recommendations.neighbourhood.item_based import\
 from search_rex.recommendations.similarity.item_based import\
     AbstractRecordSimilarity
 from search_rex.recommendations.data_model.item_based import\
-    AbstractRecordBasedDataModel
+    AbstractRecordDataModel
+from search_rex.recommendations.data_model.item_based import\
+    Preference
 import mock
+from datetime import datetime
 
 
 session = 'bertha'
@@ -17,10 +20,10 @@ doc_rome = 'rome'
 doc_cleopatra = 'cleopatra'
 doc_napoleon = 'napoleon'
 
-seen_docs = set([
-    doc_caesar,
-    doc_brutus,
-])
+default_prefs = {
+    doc_caesar: Preference(value=2.0, preference_time=datetime(1999, 1, 1)),
+    doc_brutus: Preference(value=1.0, preference_time=datetime(1999, 1, 1)),
+}
 
 doc_sims = {
     doc_caesar: {
@@ -38,10 +41,10 @@ doc_sims = {
 }
 
 
-def create_recommender(seen_docs=seen_docs, doc_sims=doc_sims):
-    data_model = AbstractRecordBasedDataModel()
-    data_model.get_seen_records = mock.Mock(
-        side_effect=lambda s_id: seen_docs)
+def create_recommender(preferences=default_prefs, doc_sims=doc_sims):
+    data_model = AbstractRecordDataModel()
+    data_model.get_preferences_of_session = mock.Mock(
+        side_effect=lambda s_id: preferences)
     record_sim = AbstractRecordSimilarity()
     record_sim.get_similarity = mock.Mock(
         side_effect=lambda from_id, to_id: doc_sims[from_id][to_id])
@@ -68,23 +71,29 @@ def test__recommend__max_num_recs_steers_amount_of_recs():
 
 
 def test__recommend__no_seen_docs__empty_recs():
-    sut = create_recommender(seen_docs=set())
+    sut = create_recommender(preferences={})
 
     recs = sut.recommend(session, max_num_recs=10)
     assert recs == []
 
 
 def test__recommend__no_neighbours_docs__empty_recs():
+    preferences = {
+        doc_caesar: Preference(2.0, datetime(1999, 1, 1)),
+    }
     sut = create_recommender(
-        seen_docs=set([doc_caesar]), doc_sims={doc_caesar: {}})
+        preferences=preferences, doc_sims={doc_caesar: {}})
 
     recs = sut.recommend(session, max_num_recs=10)
     assert recs == []
 
 
 def test__recommend__estimation_for_doc_is_NaN__do_not_recommend_doc():
+    preferences = {
+        doc_caesar: Preference(2.0, datetime(1999, 1, 1)),
+    }
     sut = create_recommender(
-        seen_docs=set([doc_caesar]),
+        preferences=preferences,
         doc_sims={doc_caesar: {doc_napoleon: float('NaN')}}
     )
 
@@ -93,8 +102,12 @@ def test__recommend__estimation_for_doc_is_NaN__do_not_recommend_doc():
 
 
 def test__recommend__NaN_similarity_present__do_not_increase_estimation():
+    preferences = {
+        doc_caesar: Preference(2.0, datetime(1999, 1, 1)),
+        doc_brutus: Preference(1.0, datetime(1999, 1, 1)),
+    }
     sut = create_recommender(
-        seen_docs=set([doc_caesar, doc_brutus]),
+        preferences=preferences,
         doc_sims={
             doc_caesar: {doc_napoleon: float('NaN')},
             doc_brutus: {doc_napoleon: 0.5},

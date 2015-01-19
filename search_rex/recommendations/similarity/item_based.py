@@ -19,9 +19,10 @@ class JaccardRecordSimilarity(object):
         self.data_model = data_model
 
     def get_similarity(self, from_record_id, to_record_id):
-        from_interactions = self.data_model.get_sessions_that_seen_record(
+        from_preferences = self.data_model.get_preferences_for_record(
             from_record_id)
-        to_interactions = self.data_model.get_sessions_that_seen_record(
+        to_preferences = self.data_model.get_preferences_for_record(
             to_record_id)
 
-        return jaccard_sim(from_interactions, to_interactions)
+        return jaccard_sim(
+            from_preferences.keys(), to_preferences.keys())

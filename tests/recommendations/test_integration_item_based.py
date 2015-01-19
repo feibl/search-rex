@@ -65,7 +65,7 @@ is_active = {
     record_inactive: False,
 }
 
-views = {
+test_actions = {
     session_alice: [
         record_welcome, record_caesar, record_brutus, record_inactive],
     session_bob: [
@@ -93,6 +93,34 @@ views = {
         record_isolated],
 }
 
+other_actions = {
+    session_alice: [
+        record_welcome, record_isolated, record_brutus, record_inactive],
+    session_bob: [
+        record_caesar, record_brutus, record_cleopatra],
+    session_carol: [
+        record_welcome, record_cleopatra],
+    session_dave: [
+        record_welcome, record_caesar, record_secrets_of_rome],
+    session_eric: [
+        record_welcome, record_napoleon],
+    session_frank: [
+        record_welcome, record_caesar],
+    session_garry: [
+        record_caesar, record_cleopatra],
+    session_hally: [
+        record_welcome, record_brutus],
+    session_ian: [
+        record_welcome, record_secrets_of_rome],
+    session_seen_all: [
+        record_caesar, record_cleopatra, record_brutus,
+        record_napoleon, record_inactive],
+    session_seen_nothing: [
+        ],
+    session_isolated: [
+        record_isolated, record_inactive, record_cleopatra],
+}
+
 
 def import_test_data(views, copies):
     for session_id, viewed_records in views.iteritems():
@@ -114,6 +142,7 @@ def import_test_data(views, copies):
     for record_id, active in is_active.iteritems():
         set_record_active(record_id=record_id, active=active)
 
+
 def create_recommender(action_type, include_internal_records):
     data_model = RecordBasedDataModel(
         action_type, include_internal_records)
@@ -126,16 +155,16 @@ def create_recommender(action_type, include_internal_records):
     return Recommender(record_based_recsys, None)
 
 
-class RecordBasedRecommenderTestCase(BaseTestCase):
-
-    def setUp(self):
-        super(RecordBasedRecommenderTestCase, self).setUp()
+class RecordBasedRecommenderTestCase(object):
 
     def test__inspired_by_your_history__exclude_internal_documents(self):
-        import_test_data(views=views, copies=views)
+        action_type = self.action_type
+        views = self.views
+        copies = self.copies
+        include_internal_records = False
 
-        action_type = ActionType.view
-        include_internal_records= False
+        import_test_data(views=views, copies=copies)
+
         sut = create_recommender(
             action_type=action_type,
             include_internal_records=include_internal_records)
@@ -173,10 +202,13 @@ class RecordBasedRecommenderTestCase(BaseTestCase):
         assert list(recs) == []
 
     def test__inspired_by_your_history__include_internal_documents(self):
-        import_test_data(views=views, copies=views)
+        action_type = self.action_type
+        views = self.views
+        copies = self.copies
+        include_internal_records = True
 
-        action_type = ActionType.view
-        include_internal_records= True
+        import_test_data(views=views, copies=copies)
+
         sut = create_recommender(
             action_type=action_type,
             include_internal_records=include_internal_records)
@@ -217,3 +249,91 @@ class RecordBasedRecommenderTestCase(BaseTestCase):
         # Has seen no records -> no recommendations
         recs = sut.recommend_from_history(session_seen_nothing)
         assert list(recs) == []
+
+    def test__similar_records__exclude_internal_documents(self):
+        action_type = self.action_type
+        views = self.views
+        copies = self.copies
+        include_internal_records = False
+
+        import_test_data(views=views, copies=copies)
+
+        sut = create_recommender(
+            action_type=action_type,
+            include_internal_records=include_internal_records)
+
+        recs, _ = zip(*sut.most_similar_records(record_welcome))
+        assert list(recs) == [
+            record_caesar, record_brutus, record_cleopatra,
+            record_napoleon]
+
+        recs, _ = zip(*sut.most_similar_records(record_caesar))
+        assert list(recs) == [
+            record_welcome, record_brutus, record_cleopatra,
+            record_napoleon]
+
+        recs, _ = zip(*sut.most_similar_records(record_caesar, max_num_recs=2))
+        assert list(recs) == [
+            record_welcome, record_brutus]
+
+        recs, _ = zip(*sut.most_similar_records(record_brutus))
+        assert list(recs) == [
+            record_caesar, record_welcome, record_cleopatra,
+            record_napoleon]
+
+        recs = sut.most_similar_records(record_isolated)
+        assert list(recs) == []
+
+    def test__similar_records__include_internal_documents(self):
+        action_type = self.action_type
+        views = self.views
+        copies = self.copies
+        include_internal_records = True
+
+        import_test_data(views=views, copies=copies)
+
+        sut = create_recommender(
+            action_type=action_type,
+            include_internal_records=include_internal_records)
+
+        recs, _ = zip(*sut.most_similar_records(record_welcome))
+        assert list(recs) == [
+            record_caesar, record_brutus, record_cleopatra,
+            record_secrets_of_rome, record_napoleon]
+
+        recs, _ = zip(*sut.most_similar_records(record_caesar))
+        assert list(recs) == [
+            record_welcome, record_brutus, record_cleopatra,
+            record_secrets_of_rome, record_napoleon]
+
+        recs, _ = zip(*sut.most_similar_records(record_caesar, max_num_recs=2))
+        assert list(recs) == [
+            record_welcome, record_brutus]
+
+        recs, _ = zip(*sut.most_similar_records(record_brutus))
+        assert list(recs) == [
+            record_caesar, record_welcome, record_cleopatra,
+            record_napoleon, record_secrets_of_rome]
+
+        recs = sut.most_similar_records(record_isolated)
+        assert list(recs) == []
+
+
+class ViewRecommenderTestCase(BaseTestCase, RecordBasedRecommenderTestCase):
+
+    views = test_actions
+    copies = other_actions
+    action_type = ActionType.view
+
+    def setUp(self):
+        super(ViewRecommenderTestCase, self).setUp()
+
+
+class CopyRecommenderTestCase(BaseTestCase, RecordBasedRecommenderTestCase):
+
+    views = other_actions
+    copies = test_actions
+    action_type = ActionType.copy
+
+    def setUp(self):
+        super(CopyRecommenderTestCase, self).setUp()

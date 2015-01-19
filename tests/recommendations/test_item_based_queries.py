@@ -4,7 +4,7 @@ from datetime import datetime
 from search_rex.services import report_action
 from search_rex.services import set_record_active
 from search_rex.recommendations.queries import get_records
-from search_rex.recommendations.queries import get_sessions_that_seen_record
+from search_rex.recommendations.queries import get_sessions_that_used_record
 from search_rex.recommendations.queries import get_seen_records
 from search_rex.recommendations.queries import get_record_columns
 from search_rex.models import Action
@@ -48,6 +48,7 @@ is_active = {
     record_inactive: False,
 }
 
+
 def import_test_data():
     test_data_path = os.path.join(_cwd, 'resource', 'item_based_test_data.csv')
     with open(test_data_path, 'r') as td_file:
@@ -64,13 +65,14 @@ def import_test_data():
 
             report_action(
                 record_id=record_id,
-                timestamp=datetime(1999,1,1),
+                timestamp=datetime(1999, 1, 1),
                 session_id=session_id,
                 is_internal_record=is_internal[record_id],
                 action_type=action_type)
 
         for record_id, active in is_active.iteritems():
             set_record_active(record_id=record_id, active=active)
+
 
 class GetRecordsTestCase(BaseTestCase):
 
@@ -89,7 +91,7 @@ class GetRecordsTestCase(BaseTestCase):
         ]
 
         returned_records = list(get_records(
-                include_internal_records=include_internal_records))
+            include_internal_records=include_internal_records))
         assert sorted(returned_records) == sorted(expected_records)
 
     def test__get_records__include_internal_records_is_true(self):
@@ -103,7 +105,7 @@ class GetRecordsTestCase(BaseTestCase):
         ]
 
         returned_records = list(get_records(
-                include_internal_records=include_internal_records))
+            include_internal_records=include_internal_records))
         assert sorted(returned_records) == sorted(expected_records)
 
     def test__get_viewed_records(self):
@@ -144,7 +146,7 @@ class GetRecordsTestCase(BaseTestCase):
         expected_sessions = [
             session_alice, session_bob, session_dave]
 
-        sessions_that_viewed = list(get_sessions_that_seen_record(
+        sessions_that_viewed = list(get_sessions_that_used_record(
             record_id=record_id, action_type=action_type))
         assert sorted(sessions_that_viewed) == sorted(expected_sessions)
 
@@ -155,7 +157,7 @@ class GetRecordsTestCase(BaseTestCase):
         expected_sessions = [
             session_alice, session_dave]
 
-        sessions_that_copied = list(get_sessions_that_seen_record(
+        sessions_that_copied = list(get_sessions_that_used_record(
             record_id=record_id, action_type=action_type))
         assert sorted(sessions_that_copied) == sorted(expected_sessions)
 
@@ -165,7 +167,7 @@ class GetRecordsTestCase(BaseTestCase):
 
         expected_sessions = []
 
-        sessions_that_seen = list(get_sessions_that_seen_record(
+        sessions_that_seen = list(get_sessions_that_used_record(
             record_id=record_id, action_type=action_type))
         assert sorted(sessions_that_seen) == sorted(expected_sessions)
 

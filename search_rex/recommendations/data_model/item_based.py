@@ -26,6 +26,19 @@ class AbstractRecordBasedDataModel(object):
     def get_record_columns(self):
         raise NotImplementedError()
 
+    def get_preferences_of_session(self, session_id):
+        """
+        Retrieves the preferences that have been recorded in a session
+        """
+        raise NotImplementedError()
+
+    def get_preferences_for_record(self, record_id):
+        """
+        Retrieves the preferences that have been recorded for a particular
+        record
+        """
+        raise NotImplementedError()
+
 
 class RecordBasedDataModel(AbstractRecordBasedDataModel):
     """
@@ -54,7 +67,7 @@ class RecordBasedDataModel(AbstractRecordBasedDataModel):
         """
         Retrieves the session that interacted with the record
         """
-        return queries.get_sessions_that_seen_record(
+        return queries.get_sessions_that_used_record(
             record_id, self.action_type)
 
     def get_record_columns(self):

@@ -103,7 +103,7 @@ def get_seen_records(session_id, action_type):
         yield record_id
 
 
-def get_sessions_that_seen_record(record_id, action_type):
+def get_sessions_that_used_record(record_id, action_type):
     """
     Retrieves the session that interacted with the record
     """

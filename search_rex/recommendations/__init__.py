@@ -20,10 +20,13 @@ def get_recommender(action_type, include_internal_records):
     return recommenders[(action_type, include_internal_records)]
 
 
-def create_recommender_system(app):
+def create_recommender_system(
+        app,
+        record_based_recsys_factory=None,
+        query_based_recsys_factory=None):
     print("Creating Recommender")
 
-    def record_based_recsys_factory(action_type, include_internal_records):
+    def r_based_recsys_factory(action_type, include_internal_records):
         data_model = item_based_dm.RecordBasedDataModel(
             action_type, include_internal_records)
 
@@ -35,7 +38,7 @@ def create_recommender_system(app):
         return item_based_rec.RecordBasedRecommender(data_model, nhood, sim)
 
 
-    def query_based_recsys_factory(action_type, include_internal_records):
+    def q_based_recsys_factory(action_type, include_internal_records):
         data_model = case_based_dm.QueryBasedDataModel(
             action_type, include_internal_records)
 
@@ -47,6 +50,12 @@ def create_recommender_system(app):
 
         return query_based_rec.QueryBasedRecommender(
             data_model, nhood, sim, scorer)
+
+    record_based_recsys_factory = record_based_recsys_factory\
+            if record_based_recsys_factory else r_based_recsys_factory
+
+    query_based_recsys_factory = querey_based_recsys_factory\
+            if query_based_recsys_factory else q_based_recsys_factory
 
     with app.app_context():
         rec_pms = [
@@ -84,8 +93,8 @@ class Recommender():
         return self.query_based_recsys.recommend_search_results(
             query_string, max_num_recs)
 
-    def get_similar_records(self, record_id, max_num_recs=10):
-        return self.record_based_recsys.get_similar_records(
+    def most_similar_records(self, record_id, max_num_recs=10):
+        return self.record_based_recsys.most_similar_records(
             record_id, max_num_recs)
 
     def recommend_from_history(self, session_id, max_num_recs=10):

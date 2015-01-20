@@ -295,3 +295,44 @@ def test__in_mem_dm__get_preferences_of_session__session_not_present():
     sut = InMemoryRecordDataModel(fake_model)
 
     assert sut.get_preferences_of_session('dogma') == {}
+
+
+def test__in_mem_dm__refresh__underlying_data_model_is_refreshed():
+    preferences = {
+    }
+    fake_model = AbstractRecordDataModel()
+    fake_model.get_preferences_for_records = mock.Mock(
+        return_value=preferences.iteritems())
+    fake_model.refresh = mock.Mock()
+
+    sut = InMemoryRecordDataModel(fake_model)
+
+    sut = InMemoryRecordDataModel(fake_model)
+    refreshed_components = set()
+    sut.refresh(refreshed_components)
+
+    fake_model.refresh.assert_called_once_with(refreshed_components)
+    assert fake_model in refreshed_components
+    assert sut in refreshed_components
+
+
+def test__in_mem_dm__refresh__data_is_reloaded():
+    preferences = {}
+    fake_model = AbstractRecordDataModel()
+    fake_model.get_preferences_for_records = mock.Mock(
+        return_value=preferences.iteritems())
+    fake_model.refresh = mock.Mock()
+
+    sut = InMemoryRecordDataModel(fake_model)
+
+    assert {k: v for k, v in sut.get_preferences_for_records()} == {}
+
+    preferences[record_caesar] = {
+        session_alice: Preference(1.0, datetime(1999, 1, 1)),
+    }
+
+    sut.refresh(set())
+
+    for record_id, rec_prefs in sut.get_preferences_for_records():
+        for session_id, pref in rec_prefs.iteritems():
+            assert preferences[record_id][session_id] == pref

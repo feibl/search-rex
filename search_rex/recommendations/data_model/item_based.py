@@ -1,5 +1,7 @@
 from .. import queries
 from search_rex.models import ActionType
+from ..refreshable import Refreshable
+from ..refreshable import RefreshHelper
 
 
 class Preference(object):
@@ -8,7 +10,7 @@ class Preference(object):
         self.preference_time = preference_time
 
 
-class AbstractRecordDataModel(object):
+class AbstractRecordDataModel(Refreshable):
     """
     A wrapper around a concrete DataModel whose methods do not include
     the action_type and the include_internal_records as parameters
@@ -111,12 +113,21 @@ class PersistentRecordDataModel(AbstractRecordDataModel):
 
             yield (record_id, preferences)
 
+    def refresh(self, refreshed_components):
+        """
+        No refresh needed as the class works directly on the database
+        """
+        refreshed_components.add(self)
+
 
 class InMemoryRecordDataModel(AbstractRecordDataModel):
 
     def __init__(self, data_model):
         self.data_model = data_model
         self.record_session_mat = {}
+        self.refresh_helper = RefreshHelper(
+            target_refresh_function=self.init_model)
+        self.refresh_helper.add_dependency(data_model)
         self.init_model()
 
     def init_model(self):
@@ -158,3 +169,10 @@ class InMemoryRecordDataModel(AbstractRecordDataModel):
         """
         for record_id, preferences in self.record_session_mat.iteritems():
             yield record_id, preferences
+
+    def refresh(self, refreshed_components):
+        """
+        No refresh needed as the class works directly on the database
+        """
+        self.refresh_helper.refresh(refreshed_components)
+        refreshed_components.add(self)

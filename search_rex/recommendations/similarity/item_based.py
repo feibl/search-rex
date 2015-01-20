@@ -1,11 +1,13 @@
 from similarity_metrics import jaccard_sim
 from similarity_metrics import cosine_sim
+from ..refreshable import Refreshable
+from ..refreshable import RefreshHelper
 from search_rex.util.date import utcnow
 import math
 from datetime import timedelta
 
 
-class AbstractRecordSimilarity(object):
+class AbstractRecordSimilarity(Refreshable):
     """
     Computes the similarity from one record to the other
     """
@@ -22,6 +24,8 @@ class RecordSimilarity(AbstractRecordSimilarity):
     def __init__(self, data_model, similarity_metric):
         self.data_model = data_model
         self.similarity_metric = similarity_metric
+        self.refresh_helper = RefreshHelper()
+        self.refresh_helper.add_dependency(data_model)
 
     def get_similarity(self, from_record_id, to_record_id):
         from_preferences = self.data_model.get_preferences_for_record(
@@ -30,6 +34,10 @@ class RecordSimilarity(AbstractRecordSimilarity):
             to_record_id)
         return self.similarity_metric.get_similarity(
             from_preferences, to_preferences)
+
+    def refresh(self, refreshed_components):
+        self.refresh_helper.refresh(refreshed_components)
+        refreshed_components.add(self)
 
 
 class AbstractPreferenceSimilarity(object):

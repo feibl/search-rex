@@ -58,6 +58,21 @@ def test__record_similarity__get_similarity():
         preferences[record_2])
 
 
+def test__record_similarity__refresh__underlying_data_model_is_refreshed():
+    fake_model = AbstractRecordDataModel()
+    fake_model.refresh = mock.Mock()
+    fake_sim = AbstractPreferenceSimilarity()
+
+    sut = RecordSimilarity(fake_model, fake_sim)
+
+    refreshed_components = set()
+    sut.refresh(refreshed_components)
+
+    assert fake_model in refreshed_components
+    assert sut in refreshed_components
+    assert fake_model.refresh.call_count == 1
+
+
 def test__jaccard__get_similarity():
     from_prefs = {
         1: Preference(1.0, None),

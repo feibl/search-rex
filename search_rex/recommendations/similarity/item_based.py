@@ -1,5 +1,8 @@
 from similarity_metrics import jaccard_sim
 from similarity_metrics import cosine_sim
+from search_rex.util.date import utcnow
+import math
+from datetime import timedelta
 
 
 class AbstractRecordSimilarity(object):
@@ -76,3 +79,67 @@ class SignificanceWeighting(AbstractPreferenceSimilarity):
             set(from_preferences.iterkeys()) & set(to_preferences.iterkeys()))
         weight = min(overlap, self.min_overlap) / float(self.min_overlap)
         return similarity * weight
+
+
+def partition_preferences_by_time(
+        preferences, time_bounds):
+    time_parts = [{} for _ in xrange(len(time_bounds))]
+    for key, pref in preferences.iteritems():
+        for t, time_bound in enumerate(time_bounds):
+            if pref.preference_time > time_bound:
+                time_parts[t][key] = pref
+                break
+    return time_parts
+
+
+class TimeDecaySimilarity(AbstractPreferenceSimilarity):
+    """
+    Implements a decreasing weight that penalises older interactions more
+    """
+    def __init__(
+            self, similarity_metric,
+            time_interval=timedelta(weeks=8), half_life=2,
+            max_age=12):
+        """
+        :param similarity_metric: The underlying similarity metric that is
+        called with every partition of preference values
+        :param time_interval: The interval with which the preferences are
+        partitioned
+        :param half_life: The number of intervals until the weight is half of
+        its initial value
+        :param max_age: The max number of intervals to consider
+        """
+        self.similarity_metric = similarity_metric
+        self.time_interval = time_interval
+        self.half_life = half_life
+        self.max_age = max_age
+
+    def get_similarity(self, from_preferences, to_preferences):
+        if len(from_preferences) == 0 and len(to_preferences) == 0:
+            return float('NaN')
+
+        time_bounds = []
+        time_weights = []
+        weight_sum = 0.0
+        curr = utcnow()
+        for t in xrange(self.max_age):
+            curr -= self.time_interval
+            time_bounds.append(curr)
+            weight = math.exp(-(t)/float(self.half_life))
+            weight_sum += weight
+            time_weights.append(weight)
+
+        from_parts = partition_preferences_by_time(
+            from_preferences, time_bounds)
+
+        to_parts = partition_preferences_by_time(
+            to_preferences, time_bounds)
+
+        sim_sum = 0.0
+        for t, w in enumerate(time_weights):
+            sim = self.similarity_metric.get_similarity(
+                from_parts[t], to_parts[t])
+            if not math.isnan(sim):
+                sim_sum += w*sim
+
+        return sim_sum / weight_sum

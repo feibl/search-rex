@@ -8,6 +8,10 @@ from search_rex.recommendations.similarity.item_based import\
     AbstractPreferenceSimilarity
 from search_rex.recommendations.similarity.item_based import\
     RecordSimilarity
+from search_rex.recommendations.similarity.item_based import\
+    TimeDecaySimilarity
+from search_rex.recommendations.similarity import item_based\
+    as item_based_sim
 
 from search_rex.recommendations.data_model.item_based import\
     Preference
@@ -15,6 +19,8 @@ from search_rex.recommendations.data_model.item_based import\
     AbstractRecordDataModel
 import mock
 import math
+from datetime import timedelta
+from datetime import datetime
 
 
 def test__record_similarity__get_similarity():
@@ -199,3 +205,69 @@ def test__significance_weighting__similarity_is_nan():
     sut = SignificanceWeighting(fake_sim, min_overlap)
 
     assert math.isnan(sut.get_similarity(from_prefs, to_prefs))
+
+
+def test__time_decay__similarity_is_weighted():
+    fake_sim = AbstractPreferenceSimilarity()
+
+    from_prefs = {
+        1: Preference(1.0, datetime(2001, 12, 30)),
+        2: Preference(2.0, datetime(2001, 12, 25)),
+        3: Preference(2.0, datetime(2001, 12, 25)),
+        4: Preference(1.0, datetime(2001, 12, 18)),
+        5: Preference(1.0, datetime(2001, 12, 1)),
+    }
+    to_prefs = {
+        1: Preference(1.0, datetime(2001, 12, 29)),
+        2: Preference(2.0, datetime(2001, 12, 26)),
+        4: Preference(1.0, datetime(2001, 12, 14)),
+        5: Preference(1.0, datetime(2001, 11, 1)),
+    }
+
+    f_parts = [[1, 2, 3], [4], [], []]
+    t_parts = [[1, 2], [], [4], []]
+
+    def get_similarity(f_prefs, t_prefs):
+        if f_prefs.keys() == f_parts[0] and t_prefs.keys() == t_parts[0]:
+            return 0.8
+        elif f_prefs.keys() == f_parts[1] and t_prefs.keys() == t_parts[1]:
+            return 0.4
+        elif f_prefs.keys() == f_parts[2] and t_prefs.keys() == t_parts[2]:
+            return 0.0
+        elif f_prefs.keys() == f_parts[3] and t_prefs.keys() == t_parts[3]:
+            return float('nan')
+
+    fake_sim.get_similarity = mock.Mock(
+        side_effect=get_similarity)
+
+    time_now = datetime(2001, 12, 31)
+    item_based_sim.utcnow = mock.Mock(
+        return_value=time_now)
+
+    sut = TimeDecaySimilarity(
+        fake_sim, time_interval=timedelta(7), half_life=2, max_age=4)
+
+    sim = sut.get_similarity(from_prefs, to_prefs)
+
+    assert abs(sim - 0.474445) < 0.00001
+
+
+def test__time_decay__prefs_are_empty__return_nan():
+    fake_sim = AbstractPreferenceSimilarity()
+
+    from_prefs = {
+    }
+    to_prefs = {
+    }
+
+    fake_sim.get_similarity = mock.Mock(return_value=1.0)
+
+    time_now = datetime(2001, 12, 31)
+    item_based_sim.utcnow = mock.Mock(return_value=time_now)
+
+    sut = TimeDecaySimilarity(
+        fake_sim, time_interval=timedelta(7), half_life=2, max_age=4)
+
+    sim = sut.get_similarity(from_prefs, to_prefs)
+
+    assert math.isnan(sim)

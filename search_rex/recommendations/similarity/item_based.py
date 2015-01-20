@@ -2,7 +2,7 @@ from similarity_metrics import jaccard_sim
 from similarity_metrics import cosine_sim
 from ..refreshable import Refreshable
 from ..refreshable import RefreshHelper
-from search_rex.util.date import utcnow
+from search_rex.util.date_util import utcnow
 import math
 from datetime import timedelta
 

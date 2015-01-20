@@ -1,4 +1,6 @@
 from collections import defaultdict
+from ..refreshable import Refreshable
+from ..refreshable import RefreshHelper
 import math
 import logging
 
@@ -6,7 +8,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class AbstractRecordBasedRecommender(object):
+class AbstractRecordBasedRecommender(Refreshable):
     """
     An item-based recommender system for recommending records to the user
     """
@@ -33,6 +35,10 @@ class RecordBasedRecommender(AbstractRecordBasedRecommender):
         self.data_model = data_model
         self.record_nhood = record_nhood
         self.record_sim = record_sim
+        self.refresh_helper = RefreshHelper()
+        self.refresh_helper.add_dependency(data_model)
+        self.refresh_helper.add_dependency(record_sim)
+        self.refresh_helper.add_dependency(record_nhood)
 
     def recommend(self, session_id, max_num_recs=10):
         """
@@ -74,3 +80,7 @@ class RecordBasedRecommender(AbstractRecordBasedRecommender):
 
         return candidates_by_score[:max_num_recs]\
             if max_num_recs is not None else candidates_by_score
+
+    def refresh(self, refreshed_components):
+        self.refresh_helper.refresh(refreshed_components)
+        refreshed_components.add(self)

@@ -200,7 +200,7 @@ def test__in_mem_knn__get_nbours():
     assert math.isnan(sut.get_similarity(record_caesar, 'unknown'))
 
 
-def test__in_mem_knn__refres__data_is_reloaded():
+def test__in_mem_knn__refresh__data_is_reloaded():
     record_caesar = 'caesar'
     record_brutus = 'brutus'
 

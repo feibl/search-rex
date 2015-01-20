@@ -196,6 +196,15 @@ def test__pers_dm__get_preferences_for_records__preferences_for_each_record():
     assert any(filter(lambda (r, _): r == record_brutus, returned_preferences))
 
 
+def test__pers_dm__refresh():
+    sut = PersistentRecordDataModel(include_internal_records=True)
+
+    refreshed_components = set()
+    sut.refresh(refreshed_components)
+
+    assert sut in refreshed_components
+
+
 def test__in_mem_dm__get_preferences_for_records():
     preferences = {
         record_caesar: {

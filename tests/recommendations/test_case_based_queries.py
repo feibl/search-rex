@@ -6,25 +6,23 @@ from search_rex.models import Record
 from search_rex.models import ActionType
 from search_rex.models import SearchQuery
 from search_rex.models import SearchSession
+from search_rex.recommendations import queries
+from search_rex.services import report_action
 from datetime import datetime
 
 
-class GetQueriesTestCase(BaseTestCase):
+def insert_external_view_action(query, record):
+    insert_action(query, record, ActionType.view, False)
 
-    def setUp(self):
-        super(GetQueriesTestCase, self).setUp()
 
-    def test__get_queries(self):
-        queries = ['hello', 'darkness', 'my', 'friend']
-        session = db.session
-        for q in queries:
-            search_query = SearchQuery(query_string=q)
-            session.add(search_query)
-        session.commit()
-
-        query_results = list(get_queries())
-        assert len(query_results) == len(queries)
-        assert sorted(query_results) == sorted(queries)
+def insert_action(query, record, action_type, is_internal):
+    report_action(
+        record_id=record,
+        timestamp=datetime(1999, 1, 1),
+        session_id='alice',
+        is_internal_record=is_internal,
+        action_type=action_type,
+        query_string=query)
 
 
 class GetHitsForQueryTestCase(BaseTestCase):
@@ -32,191 +30,106 @@ class GetHitsForQueryTestCase(BaseTestCase):
     def setUp(self):
         super(GetHitsForQueryTestCase, self).setUp()
 
-    def test__internal_view__one_internal_view_action__hit_present(self):
-        query_string = 'abc'
-        record_id = 'doccc'
+    def test__get_queries(self):
+        query_rome = 'rome'
+        query_caesar = 'caesar'
+        record_caesar = 'caesar'
+        record_brutus = 'brutus'
+        expected_queries = [query_rome, query_caesar]
 
-        sut = PersistentDataModel(
-            action_type=ActionType.view,
-            include_internal_records=True)
-        sut.report_action(
-            query_string=query_string, record_id=record_id,
-            is_internal_record=True, session_id=1234,
-            timestamp=datetime(1999, 1, 1))
-        hit_rows = sut.get_hits_for_queries(
-            [query_string])
+        insert_external_view_action(query_rome, record_caesar)
+        insert_external_view_action(query_caesar, record_brutus)
 
-        query_results = {
-            query: hit_row for query, hit_row in hit_rows
-        }
+        assert sorted(expected_queries) == sorted(list(queries.get_queries()))
 
-        assert len(query_results) == 1
+    def test__get_actions_for_queries__include_internal_records__one_hit_one_query(self):
+        query_rome = 'rome'
+        record_caesar = 'caesar'
+        action_type = ActionType.view
+        include_internal_records = True
 
-    def test__internal_view__one_external_view_action__hit_present(self):
-        query_string = 'abc'
-        record_id = 'doccc'
+        insert_action(query_rome, record_caesar, action_type, False)
 
-        sut = PersistentDataModel(
-            action_type=ActionType.view,
-            include_internal_records=True)
-        sut.report_action(
-            query_string=query_string, record_id=record_id,
-            is_internal_record=False, session_id=1234,
-            timestamp=datetime(1999, 1, 1))
-        hit_rows = sut.get_hits_for_queries(
-            [query_string])
+        actions = list(queries.get_actions_for_queries(
+            include_internal_records=include_internal_records))
 
-        query_results = {
-            query: hit_row for query, hit_row in hit_rows
-        }
+        assert len(actions) == 1
+        query, q_actions = actions[0]
 
-        assert len(query_results) == 1
+        assert query == query_rome
+        assert len(q_actions) == 1
+        assert q_actions[0].record_id == record_caesar
+        assert q_actions[0].action_type == action_type
 
-    def test__internal_view__only_copy_actions_present__no_hit(self):
-        query_string = 'abc'
-        record_id = 'doccc'
+    def test__get_actions_for_queries__include_internal_records__two_hit_one_query(self):
+        query_rome = 'rome'
+        record_caesar = 'caesar'
+        record_brutus = 'brutus'
+        action_type = ActionType.view
+        include_internal_records = True
 
-        sut = PersistentDataModel(
-            action_type=ActionType.view,
-            include_internal_records=True)
-        copy_dm = PersistentDataModel(
-            action_type=ActionType.copy,
-            include_internal_records=True)
-        copy_dm.report_action(
-            query_string=query_string, record_id=record_id,
-            is_internal_record=True, session_id=1234,
-            timestamp=datetime(1999, 1, 1))
-        hit_rows = sut.get_hits_for_queries(
-            [query_string])
+        insert_action(query_rome, record_caesar, action_type, False)
+        insert_action(query_rome, record_brutus, action_type, False)
 
-        query_results = {
-            query: hit_row for query, hit_row in hit_rows
-        }
+        actions = list(queries.get_actions_for_queries(
+            include_internal_records=include_internal_records))
 
-        assert len(query_results) == 0
+        assert len(actions) == 1
+        query, q_actions = actions[0]
 
-    def test__external_view__one_internal_view_action__no_hit(self):
-        query_string = 'abc'
-        record_id = 'doccc'
+        assert query == query_rome
+        assert len(q_actions) == 2
+        assert any(filter(lambda a: a.record_id == record_caesar, q_actions))
+        assert any(filter(lambda a: a.record_id == record_brutus, q_actions))
 
-        sut = PersistentDataModel(
-            action_type=ActionType.view,
-            include_internal_records=False)
-        sut.report_action(
-            query_string=query_string, record_id=record_id,
-            is_internal_record=True, session_id=1234,
-            timestamp=datetime(1999, 1, 1))
-        hit_rows = sut.get_hits_for_queries(
-            [query_string])
+    def test__get_actions_for_queries__include_internal_records__two_hit_two_query(self):
+        query_rome = 'rome'
+        query_caesar = 'caesar'
+        record_brutus = 'brutus'
+        record_caesar = 'caesar'
+        action_type = ActionType.view
+        include_internal_records = True
 
-        query_results = {
-            query: hit_row for query, hit_row in hit_rows
-        }
+        insert_action(query_rome, record_brutus, action_type, False)
+        insert_action(query_caesar, record_caesar, action_type, False)
 
-        assert len(query_results) == 0
+        actions = list(queries.get_actions_for_queries(
+            include_internal_records=include_internal_records))
 
-    def test__external_view__one_external_view_action__hit_present(self):
-        query_string = 'abc'
-        record_id = 'doccc'
+        assert len(actions) == 2
+        s_actions = sorted(actions, key=lambda (k, v): k)
 
-        sut = PersistentDataModel(
-            action_type=ActionType.view,
-            include_internal_records=False)
-        sut.report_action(
-            query_string=query_string, record_id=record_id,
-            is_internal_record=False, session_id=1234,
-            timestamp=datetime(1999, 1, 1))
-        hit_rows = sut.get_hits_for_queries(
-            [query_string])
+        assert s_actions[0][0] == query_caesar
+        assert s_actions[1][0] == query_rome
 
-        query_results = {
-            query: hit_row for query, hit_row in hit_rows
-        }
+    def test__get_actions_for_queries__exclude_internal_records__internal_action_not_returned(self):
+        query_rome = 'rome'
+        record_caesar = 'caesar'
+        action_type = ActionType.view
+        include_internal_records = False
 
-        assert len(query_results) == 1
+        insert_action(query_rome, record_caesar, action_type, True)
 
-    def test__external_view__only_copy_actions_present__no_hit(self):
-        query_string = 'abc'
-        record_id = 'doccc'
+        actions = list(queries.get_actions_for_queries(
+            include_internal_records=include_internal_records))
 
-        sut = PersistentDataModel(
-            action_type=ActionType.view,
-            include_internal_records=False)
-        copy_dm = PersistentDataModel(
-            action_type=ActionType.copy,
-            include_internal_records=True)
-        copy_dm.report_action(
-            query_string=query_string, record_id=record_id,
-            is_internal_record=True, session_id=1234,
-            timestamp=datetime(1999, 1, 1))
-        hit_rows = sut.get_hits_for_queries(
-            [query_string])
+        assert len(actions) == 0
 
-        query_results = {
-            query: hit_row for query, hit_row in hit_rows
-        }
+    def test__get_actions_for_queries__pass_queries(self):
+        query_rome = 'rome'
+        query_caesar = 'caesar'
+        record_brutus = 'brutus'
+        record_caesar = 'caesar'
+        action_type = ActionType.view
+        include_internal_records = True
 
-        assert len(query_results) == 0
+        insert_action(query_rome, record_brutus, action_type, False)
+        insert_action(query_caesar, record_caesar, action_type, False)
 
+        actions = list(queries.get_actions_for_queries(
+            include_internal_records=include_internal_records,
+            query_strings=[query_rome]))
 
-# class GetHitsForQueryTestCase(PersistentDmTestCase):
-#
-#     def setUp(self):
-#         super(GetHitsForQueryTestCase, self).setUp()
-#
-#         self.query_string1 = 'query'
-#         self.query_string2 = 'query2'
-#         self.query_string3 = 'query3'
-#         self.other_query = 'other_query'
-#         self.doc1 = 'doc1'
-#         self.doc2 = 'doc2'
-#
-#         self.hits = {
-#             (self.query_string1, self.doc1): 2,
-#             (self.query_string1, self.doc2): 1,
-#             (self.query_string2, self.doc1): 1,
-#             (self.query_string3, self.doc2): 1,
-#             (self.other_query, self.doc1): 1,
-#             (self.other_query, self.doc2): 1,
-#         }
-#
-#         session_id = 0
-#         for i, ((query_string, doc), hits) in enumerate(self.hits.iteritems()):
-#             for j in range(hits):
-#                 self.data_model.register_hit(
-#                     query_string=query_string, community_id=TEST_COMMUNITY,
-#                     record_id=doc, timestamp=datetime(1999, 1, 1),
-#                     session_id=session_id)
-#                 session_id += 1
-#
-#     def test__get_hits_for_query__one_query(self):
-#         db_query = self.data_model.get_hits_for_queries(
-#             [self.query_string1], community_id=TEST_COMMUNITY)
-#
-#         hit_rows = {
-#             q_string: hit_row for q_string, hit_row in db_query
-#         }
-#         assert len(hit_rows) == 1
-#         assert len(hit_rows[self.query_string1]) == 2
-#         assert hit_rows[self.query_string1][self.doc1].total_hits == 2
-#         assert hit_rows[self.query_string1][self.doc2].total_hits == 1
-#
-#     def test__get_hits_for_query__multiple_queries(self):
-#         query_strings = [
-#             self.query_string1,
-#             self.query_string2,
-#             self.query_string3
-#         ]
-#
-#         db_query = self.data_model.get_hits_for_queries(
-#             query_strings, community_id=TEST_COMMUNITY)
-#
-#         hit_rows = {
-#             q_string: hit_row for q_string, hit_row in db_query
-#         }
-#
-#         assert len(hit_rows) == 3
-#         assert hit_rows[self.query_string1][self.doc1].total_hits == 2
-#         assert hit_rows[self.query_string1][self.doc2].total_hits == 1
-#         assert hit_rows[self.query_string2][self.doc1].total_hits == 1
-#         assert hit_rows[self.query_string3][self.doc2].total_hits == 1
+        assert len(actions) == 1
+
+        assert actions[0][0] == query_rome

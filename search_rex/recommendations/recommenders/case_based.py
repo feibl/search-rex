@@ -1,5 +1,6 @@
-from .. import queries
 import math
+from ..refreshable import Refreshable
+from ..refreshable import RefreshHelper
 
 
 class SearchResultRecommendation(object):
@@ -109,7 +110,7 @@ class WeightedScorer(Scorer):
         return total_score / total_sim
 
 
-class AbstractQueryBasedRecommender(object):
+class AbstractQueryBasedRecommender(Refreshable):
     '''Recommender System for search results based on queries committed by
     members of a community'''
 
@@ -134,6 +135,10 @@ class QueryBasedRecommender(AbstractQueryBasedRecommender):
         self.query_nhood = query_nhood
         self.query_sim = query_sim
         self.scorer = scorer
+        self.refresh_helper = RefreshHelper()
+        self.refresh_helper.add_dependency(data_model)
+        self.refresh_helper.add_dependency(query_sim)
+        self.refresh_helper.add_dependency(query_nhood)
 
     def get_similar_queries(self, query_string, max_num_recs=10):
         return self.query_nhood.get_neighbours(query_string)
@@ -150,7 +155,7 @@ class QueryBasedRecommender(AbstractQueryBasedRecommender):
             if not math.isnan(sim):
                 nbour_sims[nbour] = sim
 
-        hit_row_iter = self.data_model.get_hits_for_queries(nbours)
+        hit_row_iter = self.data_model.get_hit_rows_for_queries(nbours)
 
         records = set()
         hit_rows = {}
@@ -159,7 +164,7 @@ class QueryBasedRecommender(AbstractQueryBasedRecommender):
             records.update(hit_row.keys())
             hit_rows[nbour] = hit_row
             hit_value_rows[nbour] =\
-                {record: hit.decayed_hits for record, hit in hit_row.items()}
+                {record: hit.value for record, hit in hit_row.items()}
 
         recs = {}
         for record in records:
@@ -176,7 +181,7 @@ class QueryBasedRecommender(AbstractQueryBasedRecommender):
                 if record in hit_row:
                     record_hit = hit_row[record]
 
-                    total_hits += record_hit.total_hits
+                    total_hits += record_hit.num_views
                     if last_interaction is None\
                             or record_hit.last_interaction > last_interaction:
                         last_interaction = record_hit.last_interaction
@@ -190,3 +195,7 @@ class QueryBasedRecommender(AbstractQueryBasedRecommender):
             recs.values(), key=lambda rec: rec.score, reverse=True)
 
         return sorted_recs[:max_num_recs]
+
+    def refresh(self, refreshed_components):
+        self.refresh_helper.refresh(refreshed_components)
+        refreshed_components.add(self)

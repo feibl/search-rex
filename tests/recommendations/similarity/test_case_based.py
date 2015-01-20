@@ -27,3 +27,12 @@ def test__string_jaccard_sim():
     sut = StringJaccardSimilarity(k_shingles=3)
 
     assert sut.get_similarity(string1, string2) == 0.4
+
+
+def test__str_jaccard__refresh():
+    sut = StringJaccardSimilarity(k_shingles=3)
+
+    refreshed_components = set()
+    sut.refresh(refreshed_components)
+
+    assert sut in refreshed_components

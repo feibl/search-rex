@@ -1,4 +1,5 @@
 from similarity_metrics import jaccard_sim
+from ..refreshable import Refreshable
 
 
 def shingle(doc_string, k):
@@ -17,7 +18,7 @@ def shingle(doc_string, k):
     return shingles
 
 
-class AbstractQuerySimilarity(object):
+class AbstractQuerySimilarity(Refreshable):
     '''Computes the similarity between two queries'''
 
     def get_similarity(self, from_query_string, to_query_string):
@@ -34,3 +35,6 @@ class StringJaccardSimilarity(AbstractQuerySimilarity):
         X = shingle(from_query_string, self.k_shingles)
         Y = shingle(to_query_string, self.k_shingles)
         return jaccard_sim(X, Y)
+
+    def refresh(self, refreshed_components):
+        refreshed_components.add(self)

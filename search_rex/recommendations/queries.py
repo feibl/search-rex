@@ -22,44 +22,37 @@ from ..core import db
 logger = logging.getLogger(__name__)
 
 
-def get_hits_for_queries(
-        query_strings, action_type, include_internal_records,
-        half_life_in_days=150, life_span_in_days=300):
+def get_actions_for_queries(
+        include_internal_records, query_strings=None):
     """
     Retrieves the hit rows of the given queries
     """
-
     session = db.session
+
     query = session.query(
-        Action.query_string,
-        Action.record_id,
-        func.count().label('total_hits'),
-        func.sum(func.hit_decay(
-            Action.time_created, half_life_in_days,
-            life_span_in_days)
-        ).label('decayed_hits'),
-        func.max(Action.time_created).label('last_interaction'),
-    )
+        Action.query_string, Action.time_created,
+        Action.record_id, Action.action_type)
     query = query.join(Action.record)
     query = query.filter(
-        Action.action_type == action_type,
-        Action.query_string.in_(query_strings)
-    )
-
-    if not include_internal_records:
+        Record.active == True)
+    if query_strings:
         query = query.filter(
-            Record.is_internal == False)
-
-    query = query.group_by(
-        Action.query_string, Action.record_id)
+            Action.query_string.in_(query_strings)
+        )
+    else:
+        query = query.filter(
+            Action.query_string != None
+        )
+    if not include_internal_records:
+        query = query.filter(Record.is_internal == False)
     query = query.order_by(Action.query_string)
 
-    for q_string, group in groupby(query, key=lambda h: h.query_string):
+    for query_string, actions in groupby(
+            query, key=lambda action: action.query_string):
         yield (
-            q_string,
-            {
-                hit.record_id: hit for hit in group
-            }
+            query_string, [
+                action for action in actions
+            ]
         )
 
 

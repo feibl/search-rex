@@ -1,4 +1,8 @@
-class AbstractQueryNeighbourhood(object):
+from ..refreshable import Refreshable
+from ..refreshable import RefreshHelper
+
+
+class AbstractQueryNeighbourhood(Refreshable):
     '''Computes the neighbourhood of a target query'''
 
     def get_neighbours(self, query_string):
@@ -16,6 +20,9 @@ class ThresholdQueryNeighbourhood(AbstractQueryNeighbourhood):
         self.data_model = data_model
         self.query_sim = query_sim
         self.sim_threshold = sim_threshold
+        self.refresh_helper = RefreshHelper()
+        self.refresh_helper.add_dependency(data_model)
+        self.refresh_helper.add_dependency(query_sim)
 
     def get_neighbours(self, query_string):
         for other_q_string in self.data_model.get_queries():
@@ -24,3 +31,7 @@ class ThresholdQueryNeighbourhood(AbstractQueryNeighbourhood):
 
             if similarity >= self.sim_threshold:
                 yield other_q_string
+
+    def refresh(self, refreshed_components):
+        self.refresh_helper.refresh(refreshed_components)
+        refreshed_components.add(self)

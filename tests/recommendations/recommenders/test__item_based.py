@@ -116,3 +116,28 @@ def test__recommend__NaN_similarity_present__do_not_increase_estimation():
 
     recs = sut.recommend(session, max_num_recs=10)
     assert recs == [(doc_napoleon, 0.5)]
+
+
+def test__refresh__underlying_components_are_refreshed():
+    fake_model = AbstractRecordDataModel()
+    fake_model.refresh = mock.Mock()
+    fake_sim = AbstractRecordSimilarity()
+    fake_sim.refresh = mock.Mock()
+    fake_nhood = AbstractRecordNeighbourhood()
+    fake_nhood.refresh = mock.Mock()
+
+    sut = RecordBasedRecommender(
+        data_model=fake_model,
+        record_sim=fake_sim,
+        record_nhood=fake_nhood)
+
+    refreshed_components = set()
+    sut.refresh(refreshed_components)
+
+    assert fake_model in refreshed_components
+    assert fake_sim in refreshed_components
+    assert fake_nhood in refreshed_components
+    assert sut in refreshed_components
+    assert fake_model.refresh.call_count == 1
+    assert fake_sim.refresh.call_count == 1
+    assert fake_nhood.refresh.call_count == 1

@@ -1,3 +1,5 @@
+from .refreshable import Refreshable
+from .refreshable import RefreshHelper
 import data_model.item_based as item_based_dm
 import data_model.case_based as case_based_dm
 import recommenders.item_based as item_based_rec
@@ -38,12 +40,13 @@ def create_recommender_system(
             data_model, nhood, sim)
 
     def q_based_recsys_factory(include_internal_records):
-        data_model = case_based_dm.QueryBasedDataModel(
+        data_model = case_based_dm.PersistentQueryDataModel(
             include_internal_records)
 
+        in_mem_dm = case_based_dm.InMemoryQueryDataModel(data_model)
         sim = query_based_sim.StringJaccardSimilarity(k_shingles=3)
         nhood = query_based_nhood.ThresholdQueryNeighbourhood(
-            data_model, sim, sim_threshold=0.25)
+            in_mem_dm, sim, sim_threshold=0.25)
         scorer = query_based_rec.WeightedScorer(
             query_based_rec.LogFrequency(base=2))
 
@@ -75,12 +78,17 @@ def create_recommender_system(
                 rec_service
 
 
-class Recommender():
+class Recommender(Refreshable):
 
     def __init__(
             self, record_based_recsys, query_based_recsys):
         self.record_based_recsys = record_based_recsys
         self.query_based_recsys = query_based_recsys
+        self.refresh_helper = RefreshHelper()
+        self.refresh_helper.add_dependency(
+            record_based_recsys)
+        self.refresh_helper.add_dependency(
+            query_based_recsys)
 
     def get_similar_queries(self, query_string, max_num_recs=10):
         return self.query_based_recsys.get_similar_queries(
@@ -97,3 +105,7 @@ class Recommender():
     def recommend_from_history(self, session_id, max_num_recs=10):
         return self.record_based_recsys.recommend(
             session_id, max_num_recs)
+
+    def refresh(self, refreshed_components):
+        self.refresh_helper.refresh(refreshed_components)
+        refreshed_components.add(self)

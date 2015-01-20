@@ -4,9 +4,19 @@ from search_rex.recommendations.recommenders.case_based import Frequency
 from search_rex.recommendations.recommenders.case_based import WeightedScorer
 from search_rex.recommendations.recommenders.case_based import\
     WeightedSumScorer
+from search_rex.recommendations.recommenders.case_based import\
+    QueryBasedRecommender
+from search_rex.recommendations.data_model.case_based import\
+    AbstractQueryDataModel
+from search_rex.recommendations.similarity.case_based import\
+    AbstractQuerySimilarity
+from search_rex.recommendations.neighbourhood.case_based import\
+    AbstractQueryNeighbourhood
 from ...test_util import assert_almost_equal
 
 from collections import namedtuple
+
+import mock
 
 
 Hit = namedtuple(
@@ -169,3 +179,29 @@ def test__weighted_sum_scorer__no_record():
 
     score = sut.compute_score(ukn_doc, query_hit_rows, query_sims)
     assert score == 0.0
+
+
+def test__q_recommender__refresh__underlying_components_are_refreshed():
+    fake_model = AbstractQueryDataModel()
+    fake_model.refresh = mock.Mock()
+    fake_sim = AbstractQuerySimilarity()
+    fake_sim.refresh = mock.Mock()
+    fake_nhood = AbstractQueryNeighbourhood()
+    fake_nhood.refresh = mock.Mock()
+
+    sut = QueryBasedRecommender(
+        data_model=fake_model,
+        query_sim=fake_sim,
+        query_nhood=fake_nhood,
+        scorer=WeightedSumScorer(lambda r, hit_row: 1.0))
+
+    refreshed_components = set()
+    sut.refresh(refreshed_components)
+
+    assert fake_model in refreshed_components
+    assert fake_sim in refreshed_components
+    assert fake_nhood in refreshed_components
+    assert sut in refreshed_components
+    assert fake_model.refresh.call_count == 1
+    assert fake_sim.refresh.call_count == 1
+    assert fake_nhood.refresh.call_count == 1

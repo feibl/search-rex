@@ -46,6 +46,9 @@ target/
 
 venv/
 
+# Celery
+celerybeat-schedule
+
 #vim swap files
 *.swp
 *.swo

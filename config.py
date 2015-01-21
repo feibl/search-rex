@@ -10,6 +10,9 @@ class Config(object):
     SQLALCHEMY_DATABASE_URI =\
         'postgresql://postgres:postgres@localhost/search_rex'
     API_KEY = '8ab9dc3f'
+    # celery -A search_rex.tasks worker --loglevel=info --beat
+    CELERY_BROKER_URL =\
+        'sqla+postgresql://postgres:postgres@localhost/search_rex'
 
 
 class ProductionConfig(Config):

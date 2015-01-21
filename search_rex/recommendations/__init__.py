@@ -20,6 +20,12 @@ def get_recommender(include_internal_records):
     return recommenders[include_internal_records]
 
 
+def refresh_recommenders():
+    for recommender in recommenders.values():
+        refreshed_components = set()
+        recommender.refresh(refreshed_components)
+
+
 def create_recommender_system(
         app,
         record_based_recsys_factory=None,

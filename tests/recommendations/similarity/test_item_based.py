@@ -83,7 +83,7 @@ def test__record_similarity__refresh__underlying_data_model_is_refreshed():
     assert fake_model.refresh.call_count == 1
 
 
-def test__combine_rec_similarity__get_similarity():
+def test__combine_rec_similarity__get_similarity__underlying_sims_are_called():
     record_caesar = 'caesar'
     record_brutus = 'brutus'
 
@@ -93,11 +93,41 @@ def test__combine_rec_similarity__get_similarity():
     fake_sim2.get_similarity = mock.Mock(return_value=1.0)
 
     sut = CombinedRecordSimilarity(fake_sim1, fake_sim2, weight=0.25)
-    sim = sut.get_similarity(record_caesar, record_brutus)
-    assert sim == 0.95
+    sut.get_similarity(record_caesar, record_brutus)
 
     fake_sim1.get_similarity.assert_called_with(record_caesar, record_brutus)
     fake_sim2.get_similarity.assert_called_with(record_caesar, record_brutus)
+
+
+def test__combine_rec_similarity__get_similarity():
+    record_caesar = 'caesar'
+    record_brutus = 'brutus'
+
+    sims = []
+
+    fake_sim1 = AbstractRecordSimilarity()
+    fake_sim1.get_similarity = mock.Mock(
+        side_effect=lambda f, t: sims[0])
+    fake_sim2 = AbstractRecordSimilarity()
+    fake_sim2.get_similarity = mock.Mock(
+        side_effect=lambda f, t: sims[1])
+
+    sut = CombinedRecordSimilarity(fake_sim1, fake_sim2, weight=0.25)
+
+    sims = [0.8, 1.0]
+    assert sut.get_similarity(record_caesar, record_brutus) == 0.95
+
+    sims = [0.0, 1.0]
+    assert sut.get_similarity(record_caesar, record_brutus) == 0.75
+
+    sims = [float('nan'), 1.0]
+    assert sut.get_similarity(record_caesar, record_brutus) == 0.75
+
+    sims = [1.0, float('nan')]
+    assert sut.get_similarity(record_caesar, record_brutus) == 0.25
+
+    sims = [float('nan'), float('nan')]
+    assert math.isnan(sut.get_similarity(record_caesar, record_brutus))
 
 
 def test__combine_rec_similarity__refresh__underlying_sim_metrics_are_refreshed():
@@ -198,7 +228,7 @@ class InMemorySimilarityTestCase(BaseTestCase):
 
         assert math.isnan(sut.get_similarity(record_caesar, record_napoleon))
 
-    def test__in_mem_knn__refresh__similarities_are_reloaded(self):
+    def test__in_mem_sim__refresh__similarities_are_reloaded(self):
         record_caesar = 'caesar'
         record_brutus = 'brutus'
 

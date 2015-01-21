@@ -63,6 +63,10 @@ class CombinedRecordSimilarity(AbstractRecordSimilarity):
         sim2 = self.similarity_metric2.get_similarity(
             from_record_id, to_record_id)
 
+        if math.isnan(sim1):
+            return sim2 * (1-self.weight)
+        if math.isnan(sim2):
+            return sim1 * self.weight
         return sim1 * self.weight + sim2 * (1-self.weight)
 
     def refresh(self, refreshed_components):

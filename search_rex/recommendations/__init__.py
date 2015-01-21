@@ -37,13 +37,19 @@ def create_recommender_system(
             include_internal_records)
 
         in_mem_dm = item_based_dm.InMemoryRecordDataModel(data_model)
-        pref_sim = item_based_sim.JaccardSimilarity()
-        sim = item_based_sim.RecordSimilarity(in_mem_dm, pref_sim)
+        content_sim = item_based_sim.InMemoryRecordSimilarity(
+            include_internal_records)
+        sim_metric = item_based_sim.CosineSimilarity()
+        collaborative_sim = item_based_sim.RecordSimilarity(
+            in_mem_dm, sim_metric)
+        combined_sim = item_based_sim.CombinedRecordSimilarity(
+            collaborative_sim, content_sim, weight=0.75)
+
         nhood = item_based_nhood.KNearestRecordNeighbourhood(
-            25, in_mem_dm, sim)
+            10, in_mem_dm, combined_sim)
 
         return item_based_rec.RecordBasedRecommender(
-            data_model, nhood, sim)
+            data_model, record_nhood=nhood, record_sim=combined_sim)
 
     def q_based_recsys_factory(include_internal_records):
         data_model = case_based_dm.PersistentQueryDataModel(

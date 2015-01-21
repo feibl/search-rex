@@ -13,7 +13,7 @@ class AbstractRecordNeighbourhood(Refreshable):
         raise NotImplementedError()
 
 
-class KNearestRecordNeighbourhood(object):
+class KNearestRecordNeighbourhood(AbstractRecordNeighbourhood):
     """
     Retrieves k records that are most similar to the given record
     """
@@ -78,12 +78,14 @@ class InMemoryRecordNeighbourhood(
         record_nhood = self.nhood_factory(
             self.data_model, self.record_sim, self.max_num_nbours)
         nbours_dict = {}
-        for record in self.data_model.get_records():
+        for i, record in enumerate(self.data_model.get_records()):
             nbours = record_nhood.get_neighbours(record)
             nbours_dict[record] = {
                 nbour: self.record_sim.get_similarity(record, nbour)
                 for nbour in nbours
             }
+            if i % 100 == 0:
+                print(i)
         self.nbours_dict = nbours_dict
 
     def get_neighbours(self, record_id):

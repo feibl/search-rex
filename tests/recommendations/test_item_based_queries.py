@@ -1,10 +1,12 @@
 from test_base import BaseTestCase
 from search_rex.services import report_action
+from search_rex.services import import_record_similarity
 from search_rex.services import set_record_active
 from search_rex.recommendations.queries import get_actions_on_records
 from search_rex.recommendations.queries import get_actions_on_record
 from search_rex.recommendations.queries import get_actions_of_session
 from search_rex.recommendations.queries import get_records
+from search_rex.recommendations.queries import get_similarities
 from search_rex.models import ActionType
 from datetime import datetime
 from datetime import timedelta
@@ -28,10 +30,10 @@ def insert_action(
         action_type=action_type)
 
 
-class GetHitsForQueryTestCase(BaseTestCase):
+class ItemBasedQueriesTestCase(BaseTestCase):
 
     def setUp(self):
-        super(GetHitsForQueryTestCase, self).setUp()
+        super(ItemBasedQueriesTestCase, self).setUp()
 
     def test__get_records__include_internal_records_is_true(self):
         include_internal_records = True
@@ -254,3 +256,151 @@ class GetHitsForQueryTestCase(BaseTestCase):
         actions = list(get_actions_on_records(True))
 
         assert len(actions) == 0
+
+
+def insert_similarity(
+        from_record_id, to_record_id, similarity,
+        from_is_internal=False, to_is_internal=False):
+    import_record_similarity(
+        from_record_id, from_is_internal, to_record_id, to_is_internal,
+        similarity)
+
+
+class GetSimilaritiesTestCase(BaseTestCase):
+
+    def setUp(self):
+        super(GetSimilaritiesTestCase, self).setUp()
+
+    def test__get_similarities__include_internal_records_is_true(self):
+        include_internal_records = True
+
+        record_caesar = 'caesar'
+        record_brutus = 'brutus'
+        record_napoleon = 'napoleon'
+
+        is_internal = {
+            record_caesar: True,
+            record_brutus: False,
+            record_napoleon: False,
+        }
+
+        sims = [
+            (record_caesar, record_brutus, 0.9),
+            (record_caesar, record_napoleon, 0.1),
+            (record_brutus, record_caesar, 0.8),
+            (record_napoleon, record_brutus, 0.0),
+        ]
+
+        for from_record, to_record, sim in sims:
+            insert_similarity(
+                from_record, to_record, sim,
+                is_internal[from_record], is_internal[to_record])
+
+        expected_sims = {
+            record_caesar: [sims[0], sims[1]],
+            record_brutus: [sims[2]],
+            record_napoleon: [sims[3]],
+        }
+
+        ret_sims = list(get_similarities(include_internal_records))
+        ret_sims = {record: rec_sims for record, rec_sims in ret_sims}
+
+        assert len(ret_sims) == len(expected_sims)
+
+        for record, rec_sims in expected_sims.iteritems():
+            for _, to_record, sim in rec_sims:
+                assert any(filter(
+                    lambda (r, s): r == to_record and s == sim,
+                    ret_sims[record].iteritems()))
+
+    def test__get_similarities__include_internal_records_is_false(self):
+        include_internal_records = False
+
+        record_caesar = 'caesar'
+        record_brutus = 'brutus'
+        record_napoleon = 'napoleon'
+
+        is_internal = {
+            record_caesar: True,
+            record_brutus: False,
+            record_napoleon: False,
+        }
+
+        sims = [
+            (record_caesar, record_brutus, 0.9),
+            (record_caesar, record_napoleon, 0.1),
+            (record_brutus, record_caesar, 0.8),
+            (record_brutus, record_napoleon, 0.2),
+            (record_napoleon, record_brutus, 0.0),
+        ]
+
+        for from_record, to_record, sim in sims:
+            insert_similarity(
+                from_record, to_record, sim,
+                is_internal[from_record], is_internal[to_record])
+
+        expected_sims = {
+            record_brutus: [sims[3]],
+            record_napoleon: [sims[4]],
+        }
+
+        ret_sims = list(get_similarities(include_internal_records))
+        ret_sims = {record: rec_sims for record, rec_sims in ret_sims}
+
+        assert len(ret_sims) == len(expected_sims)
+
+        for record, rec_sims in expected_sims.iteritems():
+            for _, to_record, sim in rec_sims:
+                assert any(filter(
+                    lambda (r, s): r == to_record and s == sim,
+                    ret_sims[record].iteritems()))
+
+    def test__get_similarities__sims_for_deactivated_records_not_returned(self):
+        record_caesar = 'caesar'
+        record_brutus = 'brutus'
+        record_napoleon = 'napoleon'
+
+        is_internal = {
+            record_caesar: False,
+            record_brutus: False,
+            record_napoleon: False,
+        }
+
+        is_active = {
+            record_caesar: True,
+            record_brutus: True,
+            record_napoleon: False,
+        }
+
+        sims = [
+            (record_caesar, record_brutus, 0.9),
+            (record_caesar, record_napoleon, 0.1),
+            (record_brutus, record_caesar, 0.8),
+            (record_brutus, record_napoleon, 0.2),
+            (record_napoleon, record_brutus, 0.0),
+        ]
+
+        for from_record, to_record, sim in sims:
+            insert_similarity(
+                from_record, to_record, sim,
+                is_internal[from_record], is_internal[to_record])
+
+        for record, active in is_active.iteritems():
+            set_record_active(
+                record, active)
+
+        expected_sims = {
+            record_caesar: [sims[0]],
+            record_brutus: [sims[2]],
+        }
+
+        ret_sims = list(get_similarities(True))
+        ret_sims = {record: rec_sims for record, rec_sims in ret_sims}
+
+        assert len(ret_sims) == len(expected_sims)
+
+        for record, rec_sims in expected_sims.iteritems():
+            for _, to_record, sim in rec_sims:
+                assert any(filter(
+                    lambda (r, s): r == to_record and s == sim,
+                    ret_sims[record].iteritems()))

@@ -5,9 +5,11 @@ Implements database queries that are used by the recommender system
 from ..models import Record
 from ..models import Action
 from ..models import SearchQuery
+from ..models import ImportedRecordSimilarity
 from ..core import db
 from ..util.date_util import utcnow
 
+from sqlalchemy.orm import aliased
 import logging
 from itertools import groupby
 
@@ -135,4 +137,36 @@ def get_actions_on_records(include_internal_records, max_age=None):
             record_id, [
                 action for action in actions
             ]
+        )
+
+
+def get_similarities(include_internal_records):
+    session = db.session
+
+    from_alias = aliased(Record)
+    to_alias = aliased(Record)
+
+    query = session.query(ImportedRecordSimilarity)
+    query = query.join(
+        from_alias,
+        ImportedRecordSimilarity.from_record_id==from_alias.record_id)
+    query = query.join(
+        to_alias,
+        ImportedRecordSimilarity.to_record_id==to_alias.record_id)
+
+    query = query.filter(from_alias.active == True)
+    query = query.filter(to_alias.active == True)
+    if not include_internal_records:
+        query = query.filter(from_alias.is_internal == False)
+        query = query.filter(to_alias.is_internal == False)
+
+    query = query.order_by(ImportedRecordSimilarity.from_record_id)
+
+    for record_id, sims in groupby(
+            query, key=lambda sim: sim.from_record_id):
+        yield (
+            record_id, {
+                sim.to_record_id: sim.similarity_value
+                for sim in sims
+            }
         )

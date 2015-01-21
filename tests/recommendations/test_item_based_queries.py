@@ -1,5 +1,4 @@
 from test_base import BaseTestCase
-from datetime import datetime
 from search_rex.services import report_action
 from search_rex.services import set_record_active
 from search_rex.recommendations.queries import get_actions_on_records
@@ -7,248 +6,251 @@ from search_rex.recommendations.queries import get_actions_on_record
 from search_rex.recommendations.queries import get_actions_of_session
 from search_rex.recommendations.queries import get_records
 from search_rex.models import ActionType
-import os
+from datetime import datetime
+from datetime import timedelta
 
-_cwd = os.path.dirname(os.path.abspath(__file__))
-
-
-session_alice = 'alice'
-session_bob = 'bob'
-session_carol = 'carol'
-session_dave = 'dave'
-session_eric = 'eric'
-
-record_napoleon = 'napoleon'
-record_caesar = 'caesar'
-record_brutus = 'brutus'
-record_secrets_of_rome = 'secrets_of_rome'
-record_cleopatra = 'cleopatra'
-record_inactive = 'inactive'
-
-is_internal = {
-    record_napoleon: False,
-    record_caesar: False,
-    record_brutus: False,
-    record_secrets_of_rome: True,
-    record_cleopatra: False,
-    record_inactive: False,
-}
-
-is_active = {
-    record_napoleon: True,
-    record_caesar: True,
-    record_brutus: True,
-    record_secrets_of_rome: True,
-    record_cleopatra: True,
-    record_inactive: False,
-}
-
-time_created = datetime(1999, 1, 1)
+from search_rex.util import date_util
+import mock
 
 
-def import_test_data():
-    test_data_path = os.path.join(_cwd, 'resource', 'item_based_test_data.csv')
-    with open(test_data_path, 'r') as td_file:
-        lines = td_file.readlines()
-        for i_line, line in enumerate(lines):
-            line = line.strip()
-            if i_line == 0:
-                # Header
-                continue
-            if line == '':
-                # Filler
-                continue
-            session_id, record_id, action_type = line.split(',')
-
-            report_action(
-                record_id=record_id,
-                timestamp=datetime(1999, 1, 1),
-                session_id=session_id,
-                is_internal_record=is_internal[record_id],
-                action_type=action_type)
-
-        for record_id, active in is_active.iteritems():
-            set_record_active(record_id=record_id, active=active)
+def insert_external_view_action(session, record):
+    insert_action(session, record, ActionType.view, False)
 
 
-class GetRecordsTestCase(BaseTestCase):
+def insert_action(
+        session, record, action_type=ActionType.view, is_internal=False,
+        timestamp=datetime(1999, 1, 1)):
+    report_action(
+        record_id=record,
+        timestamp=timestamp,
+        session_id=session,
+        is_internal_record=is_internal,
+        action_type=action_type)
+
+
+class GetHitsForQueryTestCase(BaseTestCase):
 
     def setUp(self):
-        super(GetRecordsTestCase, self).setUp()
-
-        import_test_data()
-
-    def test__get_records__include_internal_is_false(self):
-        include_internal_records = False
-        expected_records = [
-            record_caesar,
-            record_cleopatra,
-            record_brutus,
-            record_napoleon,
-        ]
-
-        returned_records = list(get_records(
-            include_internal_records=include_internal_records))
-        assert sorted(returned_records) == sorted(expected_records)
+        super(GetHitsForQueryTestCase, self).setUp()
 
     def test__get_records__include_internal_records_is_true(self):
         include_internal_records = True
-        expected_records = [
-            record_caesar,
-            record_cleopatra,
-            record_brutus,
-            record_napoleon,
-            record_secrets_of_rome,
-        ]
+        record_caesar = 'caesar'
+        record_brutus = 'brutus'
+        record_napoleon = 'napoleon'
+        session_alice = 'alice'
+        session_bob = 'bob'
+        expected_records = [record_caesar, record_brutus, record_napoleon]
 
-        returned_records = list(get_records(
-            include_internal_records=include_internal_records))
-        assert sorted(returned_records) == sorted(expected_records)
+        insert_action(session_alice, record_caesar, is_internal=True)
+        insert_action(session_bob, record_brutus, is_internal=False)
+        insert_action(session_bob, record_napoleon, is_internal=False)
 
-    def test__get_viewed_records(self):
-        session_id = session_alice
+        ret_records = list(get_records(include_internal_records))
+        assert sorted(expected_records) == sorted(ret_records)
 
+    def test__get_records__include_internal_records_is_false(self):
+        include_internal_records = False
+        record_caesar = 'caesar'
+        record_brutus = 'brutus'
+        record_napoleon = 'napoleon'
+        session_alice = 'alice'
+        session_bob = 'bob'
+        expected_records = [record_brutus, record_napoleon]
+
+        insert_action(session_alice, record_caesar, is_internal=True)
+        insert_action(session_bob, record_brutus, is_internal=False)
+        insert_action(session_bob, record_napoleon, is_internal=False)
+
+        ret_records = list(get_records(include_internal_records))
+        assert sorted(expected_records) == sorted(ret_records)
+
+    def test__get_actions_of_session(self):
+        record_caesar = 'caesar'
+        record_brutus = 'brutus'
+        record_napoleon = 'napoleon'
         expected_actions = [
             (record_caesar, ActionType.view),
             (record_brutus, ActionType.view),
-            (record_caesar, ActionType.copy),
             (record_brutus, ActionType.copy),
-            (record_secrets_of_rome, ActionType.copy),
+            (record_napoleon, ActionType.view),
         ]
 
-        returned_actions = list(get_actions_of_session(session_id=session_id))
+        session_alice = 'alice'
 
-        returned_actions = [
-            (action.record_id, action.action_type) for action in
-            returned_actions
-        ]
+        for record, action_type in expected_actions:
+            insert_action(session_alice, record, action_type=action_type)
 
-        assert sorted(returned_actions) == sorted(expected_actions)
+        actions = list(get_actions_of_session(session_alice))
 
-    def test__get_that_records__unknown_session__empty_list(self):
-        session_id = 'mallory'
+        assert len(actions) == 4
 
-        returned_actions = list(get_actions_of_session(session_id=session_id))
+        for record, action_type in expected_actions:
+            assert any(filter(
+                lambda a: a.record_id == record and
+                a.action_type == action_type,
+                actions))
 
-        assert len(returned_actions) == 0
+    def test__get_actions_of_session__session_not_present__empty_list(self):
+        session_unknown = 'random'
+        actions = list(get_actions_of_session(session_unknown))
+        assert len(actions) == 0
 
-    def test__sessions_that_viewed_records(self):
-        record_id = record_caesar
-
+    def test__get_actions_on_record(self):
+        record_caesar = 'caesar'
+        session_alice = 'alice'
+        session_bob = 'bob'
+        session_carol = 'carol'
         expected_actions = [
             (session_alice, ActionType.view),
             (session_bob, ActionType.view),
-            (session_dave, ActionType.view),
-            (session_alice, ActionType.copy),
-            (session_dave, ActionType.copy),
+            (session_bob, ActionType.copy),
+            (session_carol, ActionType.view),
         ]
 
-        returned_actions = list(get_actions_on_record(record_id=record_id))
+        for session, action_type in expected_actions:
+            insert_action(session, record_caesar, action_type=action_type)
 
-        returned_actions = [
-            (action.session_id, action.action_type) for action in
-            returned_actions
-        ]
+        actions = list(get_actions_on_record(record_caesar))
 
-        assert sorted(expected_actions) == sorted(returned_actions)
+        assert len(actions) == 4
 
-    def test__sessions_that_seen_record__unknown_record__empty_list(self):
-        record_id = 'dogma'
+        for session, action_type in expected_actions:
+            assert any(filter(
+                lambda a: a.session_id == session and
+                a.action_type == action_type,
+                actions))
 
-        returned_actions = list(get_actions_on_record(record_id=record_id))
+    def test__get_actions_on_record__actions_older_max_age_ignored(self):
+        record_caesar = 'caesar'
+        session_alice = 'alice'
+        insert_action(
+            session_alice, record_caesar, timestamp=datetime(1999, 1, 1))
 
-        assert len(returned_actions) == 0
+        date_util._utcnow = mock.Mock(return_value=datetime(1999, 1, 3))
 
-    def test__get_actions_on_records__do_not_include_internal_records(self):
-        include_internal_records = False
+        actions = list(
+            get_actions_on_record(record_caesar, max_age=timedelta(days=1)))
+        assert len(actions) == 0
 
-        expected_actions = [
-            (record_caesar, [
-                (session_alice, ActionType.view),
-                (session_bob, ActionType.view),
-                (session_dave, ActionType.view),
-                (session_alice, ActionType.copy),
-                (session_dave, ActionType.copy),
-            ]),
-            (record_brutus, [
-                (session_alice, ActionType.view),
-                (session_bob, ActionType.view),
-                (session_alice, ActionType.copy),
-                (session_bob, ActionType.copy),
-            ]),
-            (record_cleopatra, [
-                (session_bob, ActionType.view),
-                (session_carol, ActionType.view),
-                (session_bob, ActionType.copy),
-            ]),
-            (record_napoleon, [
-                (session_eric, ActionType.view),
-                (session_dave, ActionType.copy),
-                (session_eric, ActionType.copy),
-            ]),
-        ]
+    def test__get_actions_on_record__record_not_present__empty_list(self):
+        record_unknown = 'random'
+        actions = list(get_actions_on_record(record_unknown))
+        assert len(actions) == 0
 
-        returned_actions = list(
-            get_actions_on_records(include_internal_records))
-
-        expected_actions = sorted(expected_actions)
-        returned_actions = sorted(returned_actions)
-
-        assert len(returned_actions) == len(expected_actions)
-        for i in range(len(expected_actions)):
-            assert returned_actions[i][0] == expected_actions[i][0]
-            actions_on_record = [
-                (action.session_id, action.action_type) for action in
-                returned_actions[i][1]
-            ]
-            assert sorted(actions_on_record) ==\
-                sorted(expected_actions[i][1])
-
-    def test__get_actions_on_records__include_internal_records(self):
+    def test__get_actions_on_records__include_internal_records_is_true(self):
         include_internal_records = True
+        record_caesar = 'caesar'
+        record_brutus = 'brutus'
+        record_napoleon = 'napoleon'
+        session_alice = 'alice'
+        session_bob = 'bob'
+        session_carol = 'carol'
+        is_internal = {
+            record_caesar: True,
+            record_brutus: False,
+            record_napoleon: False,
+        }
 
-        expected_actions = [
-            (record_caesar, [
-                (session_alice, ActionType.view),
-                (session_bob, ActionType.view),
-                (session_dave, ActionType.view),
-                (session_alice, ActionType.copy),
-                (session_dave, ActionType.copy),
-            ]),
-            (record_brutus, [
-                (session_alice, ActionType.view),
-                (session_bob, ActionType.view),
-                (session_alice, ActionType.copy),
-                (session_bob, ActionType.copy),
-            ]),
-            (record_cleopatra, [
-                (session_bob, ActionType.view),
-                (session_carol, ActionType.view),
-                (session_bob, ActionType.copy),
-            ]),
-            (record_napoleon, [
-                (session_eric, ActionType.view),
-                (session_dave, ActionType.copy),
-                (session_eric, ActionType.copy),
-            ]),
-            (record_secrets_of_rome, [
-                (session_alice, ActionType.copy),
-                (session_dave, ActionType.view),
-                (session_dave, ActionType.copy),
-            ]),
+        actions = [
+            (session_alice, record_caesar, ActionType.view),
+            (session_bob, record_caesar, ActionType.view),
+            (session_bob, record_brutus, ActionType.copy),
+            (session_carol, record_napoleon, ActionType.view),
         ]
-        returned_actions = list(
-            get_actions_on_records(include_internal_records))
 
-        expected_actions = sorted(expected_actions)
-        returned_actions = sorted(returned_actions)
+        for session, record, action_type in actions:
+            insert_action(
+                session, record, action_type=action_type,
+                is_internal=is_internal[record])
 
-        assert len(returned_actions) == len(expected_actions)
-        for i in range(len(expected_actions)):
-            assert returned_actions[i][0] == expected_actions[i][0]
-            actions_on_record = [
-                (action.session_id, action.action_type) for action in
-                returned_actions[i][1]
-            ]
-            assert sorted(actions_on_record) ==\
-                sorted(expected_actions[i][1])
+        expected_actions = {
+            record_caesar: [actions[0], actions[1]],
+            record_brutus: [actions[2]],
+            record_napoleon: [actions[3]],
+        }
+
+        actions = list(get_actions_on_records(include_internal_records))
+        actions = {record: rec_actions for record, rec_actions in actions}
+
+        assert len(actions) == len(expected_actions)
+
+        for record, rec_actions in expected_actions.iteritems():
+            for session, _, action_type in rec_actions:
+                assert any(filter(
+                    lambda a: a.session_id == session and
+                    a.action_type == action_type,
+                    actions[record]))
+
+    def test__get_actions_on_records__include_internal_records_is_false(self):
+        include_internal_records = False
+        record_caesar = 'caesar'
+        record_brutus = 'brutus'
+        record_napoleon = 'napoleon'
+        session_alice = 'alice'
+        session_bob = 'bob'
+        session_carol = 'carol'
+        is_internal = {
+            record_caesar: True,
+            record_brutus: False,
+            record_napoleon: False,
+        }
+
+        actions = [
+            (session_alice, record_caesar, ActionType.view),
+            (session_bob, record_caesar, ActionType.view),
+            (session_bob, record_brutus, ActionType.copy),
+            (session_carol, record_napoleon, ActionType.view),
+        ]
+
+        for session, record, action_type in actions:
+            insert_action(
+                session, record, action_type=action_type,
+                is_internal=is_internal[record])
+
+        expected_actions = {
+            record_brutus: [actions[2]],
+            record_napoleon: [actions[3]],
+        }
+
+        actions = list(get_actions_on_records(include_internal_records))
+        actions = {record: rec_actions for record, rec_actions in actions}
+
+        assert len(actions) == len(expected_actions)
+
+        for record, rec_actions in expected_actions.iteritems():
+            for session, _, action_type in rec_actions:
+                assert any(filter(
+                    lambda a: a.session_id == session and
+                    a.action_type == action_type,
+                    actions[record]))
+
+    def test__get_actions_on_records__actions_older_than_max_age_ignored(self):
+        record_caesar = 'caesar'
+        session_alice = 'alice'
+        session_bob = 'bob'
+        insert_action(
+            session_alice, record_caesar, timestamp=datetime(1999, 1, 1))
+        insert_action(
+            session_bob, record_caesar, timestamp=datetime(1999, 1, 3))
+
+        date_util._utcnow = mock.Mock(return_value=datetime(1999, 1, 3))
+
+        actions = list(
+            get_actions_on_records(record_caesar, max_age=timedelta(days=1)))
+        assert len(actions) == 1
+
+        record, rec_actions = actions[0]
+        assert len(rec_actions) == 1
+        assert rec_actions[0].session_id == session_bob
+
+    def test__get_actions_on_records__actions_on_deactivated_records_not_returned(self):
+        session_alice = 'alice'
+        record_caesar = 'caesar'
+
+        insert_action(session_alice, record_caesar)
+        set_record_active(record_caesar, active=False)
+
+        actions = list(get_actions_on_records(True))
+
+        assert len(actions) == 0

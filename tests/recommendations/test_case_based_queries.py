@@ -1,24 +1,25 @@
 from test_base import BaseTestCase
-from search_rex.recommendations.queries import get_queries
-from search_rex.core import db
-from search_rex.models import Action
-from search_rex.models import Record
 from search_rex.models import ActionType
-from search_rex.models import SearchQuery
-from search_rex.models import SearchSession
 from search_rex.recommendations import queries
 from search_rex.services import report_action
+from search_rex.services import set_record_active
 from datetime import datetime
+from datetime import timedelta
+
+from search_rex.util import date_util
+import mock
 
 
 def insert_external_view_action(query, record):
     insert_action(query, record, ActionType.view, False)
 
 
-def insert_action(query, record, action_type, is_internal):
+def insert_action(
+        query, record, action_type, is_internal,
+        timestamp=datetime(1999, 1, 1)):
     report_action(
         record_id=record,
-        timestamp=datetime(1999, 1, 1),
+        timestamp=timestamp,
         session_id='alice',
         is_internal_record=is_internal,
         action_type=action_type,
@@ -133,3 +134,34 @@ class GetHitsForQueryTestCase(BaseTestCase):
         assert len(actions) == 1
 
         assert actions[0][0] == query_rome
+
+    def test__get_actions_for_queries__actions_on_deactivated_records_not_returned(self):
+        query_rome = 'rome'
+        record_caesar = 'caesar'
+        action_type = ActionType.view
+        include_internal_records = True
+
+        insert_action(query_rome, record_caesar, action_type, True)
+        set_record_active(record_caesar, active=False)
+
+        actions = list(queries.get_actions_for_queries(
+            include_internal_records=include_internal_records))
+
+        assert len(actions) == 0
+
+    def test__get_actions_for_queries__actions_older_than_max_age_ignored(self):
+        query_rome = 'rome'
+        record_caesar = 'caesar'
+        action_type = ActionType.view
+        include_internal_records = True
+
+        date_util._utcnow = mock.Mock(return_value=datetime(1999, 1, 3))
+        insert_action(
+            query_rome, record_caesar, action_type, True,
+            datetime(1999, 1, 1))
+
+        actions = list(queries.get_actions_for_queries(
+            include_internal_records=include_internal_records,
+            max_age=timedelta(days=1)))
+
+        assert len(actions) == 0

@@ -4,12 +4,14 @@ from search_rex.core import db
 from search_rex.services import report_view_action
 from search_rex.services import report_copy_action
 from search_rex.services import set_record_active
+from search_rex.services import import_record_similarity
 from search_rex.services import RecordNotPresentException
 from search_rex.models import Action
 from search_rex.models import Record
 from search_rex.models import ActionType
 from search_rex.models import SearchQuery
 from search_rex.models import SearchSession
+from search_rex.models import ImportedRecordSimilarity
 
 
 class ReportActionTestCase(object):
@@ -412,3 +414,164 @@ class SetRecordActiveTestCase(BaseTestCase):
             exception_thrown = True
 
         assert exception_thrown
+
+
+class ImportRecordSimilarityTestCase(BaseTestCase):
+
+    def setUp(self):
+        super(ImportRecordSimilarityTestCase, self).setUp()
+
+    def test__records_are_not_present__records_created(self):
+        record_caesar = 'caesar'
+        record_caesar_is_internal = False
+        record_brutus = 'brutus'
+        record_brutus_is_internal = False
+        similarity = 1.0
+
+        import_record_similarity(
+            record_caesar, record_caesar_is_internal,
+            record_brutus, record_brutus_is_internal,
+            similarity=similarity)
+
+        assert Record.query.filter_by(
+            record_id=record_caesar,
+            is_internal=record_caesar_is_internal,
+            active=True).one()
+
+        assert Record.query.filter_by(
+            record_id=record_brutus,
+            is_internal=record_brutus_is_internal,
+            active=True).one()
+
+    def test__similarity_is_stored(self):
+        record_caesar = 'caesar'
+        record_caesar_is_internal = False
+        record_brutus = 'brutus'
+        record_brutus_is_internal = False
+        similarity = 1.0
+
+        assert import_record_similarity(
+            record_caesar, record_caesar_is_internal,
+            record_brutus, record_brutus_is_internal,
+            similarity=similarity)
+
+        assert ImportedRecordSimilarity.query.filter_by(
+            from_record_id=record_caesar,
+            to_record_id=record_brutus,
+            similarity_value=similarity).one()
+
+    def test__new_call_overides_old_entry(self):
+        record_caesar = 'caesar'
+        record_caesar_is_internal = False
+        record_brutus = 'brutus'
+        record_brutus_is_internal = False
+        old_similarity = 1.0
+        new_similarity = 0.9
+
+        import_record_similarity(
+            record_caesar, record_caesar_is_internal,
+            record_brutus, record_brutus_is_internal,
+            similarity=old_similarity)
+
+        assert import_record_similarity(
+            record_caesar, record_caesar_is_internal,
+            record_brutus, record_brutus_is_internal,
+            similarity=new_similarity)
+
+        assert ImportedRecordSimilarity.query.filter_by(
+            from_record_id=record_caesar,
+            to_record_id=record_brutus,
+            similarity_value=old_similarity).count() == 0
+
+        assert ImportedRecordSimilarity.query.filter_by(
+            from_record_id=record_caesar,
+            to_record_id=record_brutus,
+            similarity_value=new_similarity).one()
+
+    def test__more_sims_than_max_sims__adding_lower_sim_is_discarded(self):
+        record_caesar = 'caesar'
+        max_sims_per_record = 2
+
+        record_brutus = 'brutus'
+        record_cleopatra = 'cleopatra'
+        record_napoleon = 'napoleon'
+
+        sims = {
+            record_brutus: 1.0,
+            record_cleopatra: 0.9,
+            record_napoleon: 0.2,
+        }
+
+        import_record_similarity(
+            record_caesar, True,
+            record_brutus, True,
+            similarity=sims[record_brutus],
+            max_sims_per_record=max_sims_per_record)
+
+        import_record_similarity(
+            record_caesar, True,
+            record_cleopatra, True,
+            similarity=sims[record_cleopatra],
+            max_sims_per_record=max_sims_per_record)
+
+        assert not import_record_similarity(
+            record_caesar, True,
+            record_napoleon, True,
+            similarity=sims[record_napoleon],
+            max_sims_per_record=max_sims_per_record)
+
+        assert ImportedRecordSimilarity.query.filter().count() ==\
+            max_sims_per_record
+
+        assert ImportedRecordSimilarity.query.filter_by(
+            from_record_id=record_caesar,
+            to_record_id=record_cleopatra,
+            similarity_value=sims[record_cleopatra]).one()
+        assert ImportedRecordSimilarity.query.filter_by(
+            from_record_id=record_caesar,
+            to_record_id=record_brutus,
+            similarity_value=sims[record_brutus]).one()
+
+    def test__more_sims_than_max_sims__adding_higher_sim__lowest_sim_is_replaced(self):
+        record_caesar = 'caesar'
+        max_sims_per_record = 2
+
+        record_brutus = 'brutus'
+        record_cleopatra = 'cleopatra'
+        record_napoleon = 'napoleon'
+
+        sims = {
+            record_brutus: 1.0,
+            record_cleopatra: 0.9,
+            record_napoleon: 0.2,
+        }
+
+        import_record_similarity(
+            record_caesar, True,
+            record_napoleon, True,
+            similarity=sims[record_napoleon],
+            max_sims_per_record=max_sims_per_record)
+
+        import_record_similarity(
+            record_caesar, True,
+            record_brutus, True,
+            similarity=sims[record_brutus],
+            max_sims_per_record=max_sims_per_record)
+
+        assert import_record_similarity(
+            record_caesar, True,
+            record_cleopatra, True,
+            similarity=sims[record_cleopatra],
+            max_sims_per_record=max_sims_per_record)
+
+        assert ImportedRecordSimilarity.query.filter().count() ==\
+            max_sims_per_record
+
+        assert ImportedRecordSimilarity.query.filter_by(
+            from_record_id=record_caesar,
+            to_record_id=record_cleopatra,
+            similarity_value=sims[record_cleopatra]).one()
+        assert ImportedRecordSimilarity.query.filter_by(
+            from_record_id=record_caesar,
+            to_record_id=record_brutus,
+            similarity_value=sims[record_brutus]).one()

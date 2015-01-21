@@ -3,6 +3,7 @@ from .models import Action
 from .models import ActionType
 from .models import SearchQuery
 from .models import SearchSession
+from .models import ImportedRecordSimilarity
 
 import logging
 
@@ -100,9 +101,51 @@ def set_record_active(record_id, active):
 
 
 def import_record_similarity(
-        from_record_id, from_is_internal, to_record_id, to_record_is_internal,
-        similarity):
+        from_record_id, from_is_internal, to_record_id, to_is_internal,
+        similarity, max_sims_per_record=100):
     """
     Imports a similarity value from one record to the other
     """
-    raise NotImplementedError()
+    assert max_sims_per_record > 0
+    created = False
+
+    session = db.session
+    get_one_or_create(
+        session, Record, record_id=from_record_id,
+        create_kwargs={'is_internal': from_is_internal})
+    get_one_or_create(
+        session, Record, record_id=to_record_id,
+        create_kwargs={'is_internal': to_is_internal})
+
+    sim = ImportedRecordSimilarity.query.filter_by(
+        from_record_id=from_record_id,
+        to_record_id=to_record_id).first()
+
+    if sim:
+        sim.similarity_value = similarity
+        session.add(sim)
+        created = True
+    else:
+        sim_to_create = ImportedRecordSimilarity()
+        sim_to_create.from_record_id = from_record_id
+        sim_to_create.to_record_id = to_record_id
+        sim_to_create.similarity_value = similarity
+
+        num_sims = ImportedRecordSimilarity.query.filter_by(
+            from_record_id=from_record_id).count()
+
+        if num_sims < max_sims_per_record:
+            session.add(sim_to_create)
+            created = True
+        else:
+            min_sim = ImportedRecordSimilarity.query.filter_by(
+                from_record_id=from_record_id).order_by(
+                    ImportedRecordSimilarity.similarity_value.asc()).first()
+
+            if min_sim.similarity_value < similarity:
+                session.delete(min_sim)
+                session.add(sim_to_create)
+                created = True
+
+    session.commit()
+    return created

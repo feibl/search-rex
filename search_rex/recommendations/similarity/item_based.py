@@ -1,10 +1,12 @@
 from similarity_metrics import jaccard_sim
 from similarity_metrics import cosine_sim
+from .. import queries
 from ..refreshable import Refreshable
 from ..refreshable import RefreshHelper
 from search_rex.util.date_util import utcnow
 import math
 from datetime import timedelta
+from collections import defaultdict
 
 
 class AbstractRecordSimilarity(Refreshable):
@@ -34,6 +36,69 @@ class RecordSimilarity(AbstractRecordSimilarity):
             to_record_id)
         return self.similarity_metric.get_similarity(
             from_preferences, to_preferences)
+
+    def refresh(self, refreshed_components):
+        self.refresh_helper.refresh(refreshed_components)
+        refreshed_components.add(self)
+
+
+class CombinedRecordSimilarity(AbstractRecordSimilarity):
+    """
+    Combines the similarity value of two similarity metrics by applying a
+    weight
+    """
+
+    def __init__(self, similarity_metric1, similarity_metric2, weight):
+        assert weight >= 0 and weight <= 1
+        self.similarity_metric1 = similarity_metric1
+        self.similarity_metric2 = similarity_metric2
+        self.weight = weight
+        self.refresh_helper = RefreshHelper()
+        self.refresh_helper.add_dependency(similarity_metric1)
+        self.refresh_helper.add_dependency(similarity_metric2)
+
+    def get_similarity(self, from_record_id, to_record_id):
+        sim1 = self.similarity_metric1.get_similarity(
+            from_record_id, to_record_id)
+        sim2 = self.similarity_metric2.get_similarity(
+            from_record_id, to_record_id)
+
+        return sim1 * self.weight + sim2 * (1-self.weight)
+
+    def refresh(self, refreshed_components):
+        self.refresh_helper.refresh(refreshed_components)
+        refreshed_components.add(self)
+
+
+class InMemoryRecordSimilarity(AbstractRecordSimilarity):
+    """
+    Loads similarities from the database and stores them in the memory
+    """
+    def __init__(self, include_internal_records, max_sims_per_record=100):
+        self.include_internal_records = include_internal_records
+        self.max_sims_per_record = max_sims_per_record
+        self.similarities = {}
+        self.refresh_helper = RefreshHelper(
+            target_refresh_function=self.init_similarities)
+        self.init_similarities()
+
+    def init_similarities(self):
+        similarities = defaultdict(dict)
+        for from_record, rec_sims in queries.get_similarities(
+                self.include_internal_records):
+            sorted_sims = sorted(
+                rec_sims.iteritems(), key=lambda(_, s): s, reverse=True)
+            for i, (to_record, sim) in enumerate(sorted_sims):
+                if i >= self.max_sims_per_record:
+                    break
+                similarities[from_record][to_record] = sim
+        self.similarities = similarities
+
+    def get_similarity(self, from_record_id, to_record_id):
+        if from_record_id in self.similarities:
+            if to_record_id in self.similarities[from_record_id]:
+                return self.similarities[from_record_id][to_record_id]
+        return float('nan')
 
     def refresh(self, refreshed_components):
         self.refresh_helper.refresh(refreshed_components)
@@ -133,7 +198,7 @@ class TimeDecaySimilarity(AbstractPreferenceSimilarity):
         for t in xrange(self.max_age):
             curr -= self.time_interval
             time_bounds.append(curr)
-            weight = math.exp(-(t)/float(self.half_life))
+            weight = 2**(-(t)/float(self.half_life))
             weight_sum += weight
             time_weights.append(weight)
 

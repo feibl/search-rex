@@ -110,11 +110,11 @@ class Recommender(Refreshable):
         return self.query_based_recsys.recommend_search_results(
             query_string, max_num_recs)
 
-    def most_similar_records(self, record_id, max_num_recs=10):
+    def other_users_also_used(self, record_id, max_num_recs=10):
         return self.record_based_recsys.most_similar_records(
             record_id, max_num_recs)
 
-    def recommend_from_history(self, session_id, max_num_recs=10):
+    def influenced_by_your_history(self, session_id, max_num_recs=10):
         return self.record_based_recsys.recommend(
             session_id, max_num_recs)
 

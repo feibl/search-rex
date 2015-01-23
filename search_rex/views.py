@@ -6,11 +6,16 @@ from flask import current_app
 from flask.ext.restful.inputs import datetime_from_iso8601
 from functools import wraps
 
+import logging
+
 from services import report_view_action
 from services import report_copy_action
+import services
 
 from .recommendations import get_recommender
 
+
+logger = logging.getLogger(__name__)
 
 rec_api = Blueprint('rec_api', __name__)
 
@@ -22,6 +27,7 @@ def api_key_required(view_function):
                 request.args.get('api_key') == current_app.config['API_KEY']:
             return view_function(*args, **kwargs)
         else:
+            logger.info('Wrong API Key received')
             raise InvalidUsage(
                 u'Invalid API key',
                 status_code=403)
@@ -58,7 +64,6 @@ def view():
     """
     Reports that a view action occurred during a session
     """
-
     is_internal_record = parse_arg(
         request, 'is_internal_record', required=True, type=bool)
     record_id = parse_arg(request, 'record_id', required=True)
@@ -66,6 +71,10 @@ def view():
     timestamp = parse_arg(
         request, 'timestamp', required=True, type=datetime_from_iso8601)
     query_string = parse_arg(request, 'query_string', required=False)
+
+    logger.info(
+        'View action received. Record: %s, Session: %s, Query: %s',
+        record_id, session_id, query_string)
 
     report_view_action(
         query_string=query_string, record_id=record_id, timestamp=timestamp,
@@ -89,6 +98,10 @@ def copy():
         request, 'timestamp', required=True, type=datetime_from_iso8601)
     query_string = parse_arg(request, 'query_string', required=False)
 
+    logger.info(
+        'Copy action received. Record: %s, Session: %s, Query: %s',
+        record_id, session_id, query_string)
+
     report_copy_action(
         query_string=query_string, record_id=record_id, timestamp=timestamp,
         session_id=session_id, is_internal_record=is_internal_record)
@@ -96,20 +109,25 @@ def copy():
     return jsonify(success=True)
 
 
-@rec_api.route('/api/inspired_by_your_history', methods=['GET'])
+@rec_api.route('/api/influenced_by_your_history', methods=['GET'])
 @api_key_required
-def inspired_by_your_history():
+def influenced_by_your_history():
     """
     Gets a list of recommended records based on a session's history
     """
     include_internal_records = parse_arg(
-        request, 'include_internal_records', required=True, type=bool)
+        request, 'include_internal_records', required=True)
+    print(include_internal_records)
     session_id = parse_arg(request, 'session_id', required=True)
     max_num_recs = parse_arg(
         request, 'max_num_recs', required=False, type=int)
 
+    logger.info(
+        'Influenced by your history request. Session: %s',
+        session_id)
+
     recommender = get_recommender(include_internal_records)
-    recs = recommender.recommend_from_history(
+    recs = recommender.influenced_by_your_history(
         session_id=session_id, max_num_recs=max_num_recs)
 
     return jsonify(results=[
@@ -131,7 +149,7 @@ def other_users_also_used():
         request, 'max_num_recs', required=False, type=int)
 
     recommender = get_recommender(include_internal_records)
-    recs = recommender.recommend_similar_records(
+    recs = recommender.other_users_also_used(
         record_id, max_num_recs=max_num_recs)
 
     return jsonify(results=[
@@ -186,6 +204,7 @@ def set_record_active():
     record_id = parse_arg(request, 'record_id', required=True)
     active = parse_arg(request, 'active', required=True, type=bool)
 
+    services.set_record_active(record_id, active)
     return jsonify(success=True)
 
 
@@ -205,28 +224,11 @@ def import_record_similarity():
     sim_value = parse_arg(
         request, 'similarity_value', required=True, type=float)
 
+    services.import_record_similarity(
+        from_record_id, from_is_internal,
+        to_record_id, to_is_internal,
+        sim_value)
     return jsonify(success=True)
-
-
-@rec_api.route('/api/recommend', methods=['GET'])
-@api_key_required
-def recommend():
-    '''Recommends search results other users from the same community where
-    interested in when using a similar query'''
-    community_id = parse_arg(request, 'community_id', required=True)
-    query_string = parse_arg(request, 'query_string', required=True)
-
-    recs = rec_service.recommend(
-        query_string, community_id=community_id)
-
-    return jsonify(
-        {
-            'results':
-            [
-                rec.serialize() for rec in recs
-            ]
-        }
-    )
 
 
 @rec_api.errorhandler(InvalidUsage)

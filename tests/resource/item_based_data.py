@@ -82,12 +82,12 @@ view_actions = {
 copy_actions = view_actions
 
 
-def import_test_data(views, copies):
+def import_test_data(views, copies, timestamp=datetime.utcnow()):
     for session_id, viewed_records in views.iteritems():
         for record_id in viewed_records:
             report_view_action(
                 record_id=record_id,
-                timestamp=datetime(1999, 1, 1),
+                timestamp=timestamp,
                 session_id=session_id,
                 is_internal_record=is_internal[record_id])
 
@@ -95,7 +95,7 @@ def import_test_data(views, copies):
         for record_id in copied_records:
             report_copy_action(
                 record_id=record_id,
-                timestamp=datetime(1999, 1, 1),
+                timestamp=timestamp,
                 session_id=session_id,
                 is_internal_record=is_internal[record_id])
 

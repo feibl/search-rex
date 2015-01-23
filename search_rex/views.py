@@ -50,12 +50,15 @@ def parse_arg(
     except ValueError:
         if required:
             raise InvalidUsage(
-                u'Parameter {} could not be parsed'.format(
-                    arg_name),
+                u'Parameter {} could not be parsed'.format(arg_name),
                 status_code=400)
         arg = default_value
 
     return arg
+
+
+def parse_bool(string):
+    return string.lower() == 'true'
 
 
 @rec_api.route('/api/view', methods=['GET'])
@@ -65,7 +68,7 @@ def view():
     Reports that a view action occurred during a session
     """
     is_internal_record = parse_arg(
-        request, 'is_internal_record', required=True, type=bool)
+        request, 'is_internal_record', required=True, type=parse_bool)
     record_id = parse_arg(request, 'record_id', required=True)
     session_id = parse_arg(request, 'session_id', required=True)
     timestamp = parse_arg(
@@ -91,7 +94,7 @@ def copy():
     """
 
     is_internal_record = parse_arg(
-        request, 'is_internal_record', required=True, type=bool)
+        request, 'is_internal_record', required=True, type=parse_bool)
     record_id = parse_arg(request, 'record_id', required=True)
     session_id = parse_arg(request, 'session_id', required=True)
     timestamp = parse_arg(
@@ -116,7 +119,7 @@ def influenced_by_your_history():
     Gets a list of recommended records based on a session's history
     """
     include_internal_records = parse_arg(
-        request, 'include_internal_records', required=True)
+        request, 'include_internal_records', required=True, type=parse_bool)
     print(include_internal_records)
     session_id = parse_arg(request, 'session_id', required=True)
     max_num_recs = parse_arg(
@@ -143,7 +146,7 @@ def other_users_also_used():
     """
 
     include_internal_records = parse_arg(
-        request, 'include_internal_records', required=True, type=bool)
+        request, 'include_internal_records', required=True, type=parse_bool)
     record_id = parse_arg(request, 'record_id', required=True)
     max_num_recs = parse_arg(
         request, 'max_num_recs', required=False, type=int)
@@ -165,7 +168,7 @@ def recommended_search_results():
     """
 
     include_internal_records = parse_arg(
-        request, 'include_internal_records', required=True, type=bool)
+        request, 'include_internal_records', required=True, type=parse_bool)
     query_string = parse_arg(request, 'query_string', required=True)
     max_num_recs = parse_arg(
         request, 'max_num_recs', required=False, type=int)
@@ -202,7 +205,7 @@ def set_record_active():
     """
 
     record_id = parse_arg(request, 'record_id', required=True)
-    active = parse_arg(request, 'active', required=True, type=bool)
+    active = parse_arg(request, 'active', required=True, type=parse_bool)
 
     services.set_record_active(record_id, active)
     return jsonify(success=True)
@@ -218,9 +221,9 @@ def import_record_similarity():
     from_record_id = parse_arg(request, 'from_record_id', required=True)
     to_record_id = parse_arg(request, 'to_record_id', required=True)
     from_is_internal = parse_arg(
-        request, 'from_record_is_internal', required=True, type=bool)
+        request, 'from_record_is_internal', required=True, type=parse_bool)
     to_is_internal = parse_arg(
-        request, 'to_record_is_internal', required=True, type=bool)
+        request, 'to_record_is_internal', required=True, type=parse_bool)
     sim_value = parse_arg(
         request, 'similarity_value', required=True, type=float)
 

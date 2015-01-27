@@ -96,7 +96,6 @@ class PersistentQueryDataModel(AbstractQueryDataModel):
         for query, actions in queries.get_actions_for_queries(
                 self.include_internal_records, target_queries):
             hits = self.__get_hits_from_actions(actions)
-
             yield (query, hits)
 
     def get_hit_rows(self):

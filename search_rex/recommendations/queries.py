@@ -31,7 +31,9 @@ def get_actions_for_queries(
     query = query.join(Action.record)
     query = query.filter(
         Record.active == True)
-    if query_strings:
+    if query_strings is not None:
+        if query_strings == []:
+            return
         query = query.filter(
             Action.query_string.in_(query_strings)
         )

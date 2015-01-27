@@ -63,7 +63,7 @@ def create_recommender_system(
             query_based_rec.LogFrequency(base=2))
 
         return query_based_rec.QueryBasedRecommender(
-            data_model, nhood, sim, scorer)
+            in_mem_dm, nhood, sim, scorer)
 
     record_based_recsys_factory = record_based_recsys_factory\
         if record_based_recsys_factory else r_based_recsys_factory

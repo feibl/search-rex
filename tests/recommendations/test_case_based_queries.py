@@ -135,6 +135,23 @@ class GetHitsForQueryTestCase(BaseTestCase):
 
         assert actions[0][0] == query_rome
 
+    def test__get_actions_for_queries__pass_empty_query_list(self):
+        query_rome = 'rome'
+        query_caesar = 'caesar'
+        record_brutus = 'brutus'
+        record_caesar = 'caesar'
+        action_type = ActionType.view
+        include_internal_records = True
+
+        insert_action(query_rome, record_brutus, action_type, False)
+        insert_action(query_caesar, record_caesar, action_type, False)
+
+        actions = list(queries.get_actions_for_queries(
+            include_internal_records=include_internal_records,
+            query_strings=[]))
+
+        assert len(actions) == 0
+
     def test__get_actions_for_queries__actions_on_deactivated_records_not_returned(self):
         query_rome = 'rome'
         record_caesar = 'caesar'

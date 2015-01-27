@@ -13,6 +13,7 @@ from services import report_copy_action
 import services
 
 from .recommendations import get_recommender
+from . import recommendations
 
 
 logger = logging.getLogger(__name__)
@@ -211,28 +212,19 @@ def set_record_active():
     return jsonify(success=True)
 
 
-@rec_api.route('/api/import_record_similarity', methods=['GET'])
+@rec_api.route('/api/refresh', methods=['GET'])
 @api_key_required
-def import_record_similarity():
+def refresh():
     """
     Imports a similarity value of two records
     """
 
-    from_record_id = parse_arg(request, 'from_record_id', required=True)
-    to_record_id = parse_arg(request, 'to_record_id', required=True)
-    from_is_internal = parse_arg(
-        request, 'from_record_is_internal', required=True, type=parse_bool)
-    to_is_internal = parse_arg(
-        request, 'to_record_is_internal', required=True, type=parse_bool)
-    sim_value = parse_arg(
-        request, 'similarity_value', required=True, type=float)
-
-    services.import_record_similarity(
-        from_record_id, from_is_internal,
-        to_record_id, to_is_internal,
-        sim_value)
+    recommendations.refresh_recommenders()
     return jsonify(success=True)
 
+
+@rec_api.route('/api/import_record_similarity', methods=['GET'])
+@api_key_required
 
 @rec_api.errorhandler(InvalidUsage)
 def handle_invalid_usage(error):

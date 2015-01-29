@@ -76,7 +76,7 @@ def view():
         request, 'timestamp', required=True, type=datetime_from_iso8601)
     query_string = parse_arg(request, 'query_string', required=False)
 
-    logger.info(
+    current_app.logger.info(
         'View action received. Record: %s, Session: %s, Query: %s',
         record_id, session_id, query_string)
 
@@ -102,7 +102,7 @@ def copy():
         request, 'timestamp', required=True, type=datetime_from_iso8601)
     query_string = parse_arg(request, 'query_string', required=False)
 
-    logger.info(
+    current_app.logger.info(
         'Copy action received. Record: %s, Session: %s, Query: %s',
         record_id, session_id, query_string)
 
@@ -126,7 +126,7 @@ def influenced_by_your_history():
     max_num_recs = parse_arg(
         request, 'max_num_recs', required=False, type=int)
 
-    logger.info(
+    current_app.logger.info(
         'Influenced by your history request. Session: %s',
         session_id)
 
@@ -152,6 +152,10 @@ def other_users_also_used():
     max_num_recs = parse_arg(
         request, 'max_num_recs', required=False, type=int)
 
+    current_app.logger.info(
+        'Other Users also used. Record: %s',
+        record_id)
+
     recommender = get_recommender(include_internal_records)
     recs = recommender.other_users_also_used(
         record_id, max_num_recs=max_num_recs)
@@ -174,6 +178,10 @@ def recommended_search_results():
     max_num_recs = parse_arg(
         request, 'max_num_recs', required=False, type=int)
 
+    current_app.logger.info(
+        'Recommended Search Results. Query: %s',
+        query_string)
+
     recommender = get_recommender(include_internal_records)
     recs = recommender.recommend_search_results(
         query_string, max_num_recs=max_num_recs)
@@ -189,9 +197,12 @@ def similar_queries():
     """
 
     query_string = parse_arg(request, 'query_string', required=True)
-    community_id = 3
+
+    current_app.logger.info(
+        'Similar Queries Request received: %s', query_string)
+
     similar_queries = get_recommender(True).get_similar_queries(
-        query_string, community_id)
+        query_string)
 
     return jsonify(
         {'results': [sim_q for sim_q in similar_queries]}
@@ -218,8 +229,9 @@ def refresh():
     """
     Imports a similarity value of two records
     """
-
+    current_app.logger.info('Refresh Call Received')
     recommendations.refresh_recommenders()
+    current_app.logger.info('Refresh Finished')
     return jsonify(success=True)
 
 

@@ -13,7 +13,6 @@ from services import report_copy_action
 import services
 
 from .recommendations import get_recommender
-from . import recommendations
 
 
 logger = logging.getLogger(__name__)
@@ -220,18 +219,6 @@ def set_record_active():
     active = parse_arg(request, 'active', required=True, type=parse_bool)
 
     services.set_record_active(record_id, active)
-    return jsonify(success=True)
-
-
-@rec_api.route('/api/refresh', methods=['GET'])
-@api_key_required
-def refresh():
-    """
-    Imports a similarity value of two records
-    """
-    current_app.logger.info('Refresh Call Received')
-    recommendations.refresh_recommenders()
-    current_app.logger.info('Refresh Finished')
     return jsonify(success=True)
 
 

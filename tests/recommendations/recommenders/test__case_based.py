@@ -89,13 +89,13 @@ def test__frequency__empty_hit_row():
 
 def test__log_frequency__record_present():
     sut = LogFrequency(base=2, scale=1.0)
-    hit_row = {doc_1: 8, doc_2: 1}
+    hit_row = {doc_1: 7, doc_2: 1}
     assert sut(doc_1, hit_row) == 3.0
 
 
 def test__log_frequency__base_10():
     sut = LogFrequency(base=10, scale=1.0)
-    hit_row = {doc_1: 10, doc_2: 1}
+    hit_row = {doc_1: 9, doc_2: 1}
     assert sut(doc_1, hit_row) == 1.0
 
 

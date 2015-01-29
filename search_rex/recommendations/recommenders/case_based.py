@@ -46,7 +46,7 @@ class LogFrequency:
     def __call__(self, record_id, query_hits):
         if record_id not in query_hits:
             return 0.0
-        weight = self.scale * query_hits[record_id]
+        weight = 1 + self.scale * query_hits[record_id]
         return math.log(weight, self.base) if weight > 0.0 else 0.0
 
 
@@ -194,7 +194,12 @@ class QueryBasedRecommender(AbstractQueryBasedRecommender):
         sorted_recs = sorted(
             recs.values(), key=lambda rec: rec.score, reverse=True)
 
-        return sorted_recs[:max_num_recs]
+        recs_to_return = sorted_recs[:max_num_recs]
+        for rec in recs_to_return:
+            print('Record: {}, Score: {}'.format(
+                rec.record_id, rec.score))
+        return recs_to_return
+
 
     def refresh(self, refreshed_components):
         self.refresh_helper.refresh(refreshed_components)

@@ -1,7 +1,8 @@
 from search_rex.recommendations.recommenders.case_based import relevance
 from search_rex.recommendations.recommenders.case_based import LogFrequency
 from search_rex.recommendations.recommenders.case_based import Frequency
-from search_rex.recommendations.recommenders.case_based import WeightedScorer
+from search_rex.recommendations.recommenders.case_based import\
+    WeightedAverageScorer
 from search_rex.recommendations.recommenders.case_based import\
     WeightedSumScorer
 from search_rex.recommendations.recommenders.case_based import\
@@ -130,14 +131,14 @@ def test__log_frequency__total_hit_row_is_empty():
 
 
 def test__weighted_scorer():
-    sut = WeightedScorer(lambda record, hit_row: 1.0)
+    sut = WeightedAverageScorer(lambda record, hit_row: 1.0)
 
     score = sut.compute_score(doc_1, query_hit_rows, query_sims)
     assert_almost_equal(score, 1.0, 0.00001)
 
 
 def test__weighted_scorer__sims_are_zero():
-    sut = WeightedScorer(lambda record, hit_row: 1.0)
+    sut = WeightedAverageScorer(lambda record, hit_row: 1.0)
     query_sims = {
         query_1: 0.0,
         query_2: 0.0,
@@ -149,7 +150,7 @@ def test__weighted_scorer__sims_are_zero():
 
 
 def test__weighted_scorer__no_record():
-    sut = WeightedScorer(lambda record, hit_row: 1.0)
+    sut = WeightedAverageScorer(lambda record, hit_row: 1.0)
 
     score = sut.compute_score(ukn_doc, query_hit_rows, query_sims)
     assert score == 0.0

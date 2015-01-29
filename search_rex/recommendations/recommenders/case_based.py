@@ -1,9 +1,19 @@
+"""
+In this module, the implementation of the case-based recommender system is
+defined. The main class is the QueryBasedRecommender which is able to recommend
+search results that users have found relevant after they have entered a
+particular query.
+"""
+
 import math
 from ..refreshable import Refreshable
 from ..refreshable import RefreshHelper
 
 
 class SearchResultRecommendation(object):
+    """
+    Recommendation object that holds informations about the recommended record
+    """
 
     def __init__(self, record_id):
         self.record_id = record_id
@@ -61,6 +71,9 @@ class Frequency:
 
 
 class Scorer(object):
+    """
+    A mathematical function that is applied on the hit-matrix entries
+    """
 
     def compute_score(self, record_id, hit_rows, query_sims):
         raise NotImplementedError()
@@ -75,6 +88,10 @@ class WeightedSumScorer(Scorer):
         self.score_function = score_function
 
     def compute_score(self, record_id, hit_rows, query_sims):
+        """
+        Computes the score of a record including the similarities of queries to
+        the target query and their hit-rows
+        """
         assert len(hit_rows) == len(query_sims)
         total_score = 0.0
         for query_string, nbor_hit_row in hit_rows.iteritems():
@@ -86,7 +103,7 @@ class WeightedSumScorer(Scorer):
         return total_score
 
 
-class WeightedScorer(Scorer):
+class WeightedAverageScorer(Scorer):
     """
     Computes the weighted average score using the query similarities
     """
@@ -95,6 +112,10 @@ class WeightedScorer(Scorer):
         self.score_function = score_function
 
     def compute_score(self, record_id, hit_rows, query_sims):
+        """
+        Computes the score of a record including the similarities of queries to
+        the target query and their hit-rows
+        """
         assert len(hit_rows) == len(query_sims)
         total_score = 0.0
         total_sim = 0.0
@@ -116,14 +137,19 @@ class AbstractQueryBasedRecommender(Refreshable):
 
     def recommend_search_results(self, query_string, max_num_recs=10):
         """
-        Returns a list of n records that were relevant to other users
-        when committing the same or a similar query
+        Returns a list of records that were viewed after entering the query
+
+        :param query_string: the query that was entered by the user
+        :param max_num_recs: the maximum number of recommendations to return
         """
         raise NotImplementedError()
 
     def get_similar_queries(self, query_string, max_num_recs=10):
-        '''Gets similar queries that were committed by the given community
-        '''
+        """
+        Returns a list of queries which are similar to the target query
+
+        :param query_string: the query that was entered by the user
+        """
         raise NotImplementedError()
 
 
@@ -141,9 +167,20 @@ class QueryBasedRecommender(AbstractQueryBasedRecommender):
         self.refresh_helper.add_dependency(query_nhood)
 
     def get_similar_queries(self, query_string, max_num_recs=10):
+        """
+        Returns a list of queries which are similar to the target query
+
+        :param query_string: the query that was entered by the user
+        """
         return self.query_nhood.get_neighbours(query_string)
 
     def recommend_search_results(self, query_string, max_num_recs=10):
+        """
+        Returns a list of records that were viewed after entering the query
+
+        :param query_string: the query that was entered by the user
+        :param max_num_recs: the maximum number of recommendations to return
+        """
         nbours = [
             nbour for nbour
             in self.query_nhood.get_neighbours(query_string)
@@ -199,7 +236,6 @@ class QueryBasedRecommender(AbstractQueryBasedRecommender):
             print('Record: {}, Score: {}'.format(
                 rec.record_id, rec.score))
         return recs_to_return
-
 
     def refresh(self, refreshed_components):
         self.refresh_helper.refresh(refreshed_components)

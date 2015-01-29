@@ -1,3 +1,14 @@
+"""
+This module is the main entry point for accessing the recommendation services.
+It provides a factory method that is called for creating the two recommender
+instances. One of these instances is used for internal users who are allowed
+to see HSR-internal documents. The other instance is applied when HSR-internal
+documents should not be recommended. This is the case for external users.
+Further, this module also holds these recommender instances once they are
+created. For this reason, it is accessed by the search_rex.views module in
+order to generate recommendations for the users.
+"""
+
 from .refreshable import Refreshable
 from .refreshable import RefreshHelper
 import data_model.item_based as item_based_dm
@@ -14,6 +25,9 @@ recommender_instances = {}
 
 
 def get_recommender(include_internal_records):
+    """
+    Returns either the internal or the external recommender instance
+    """
     if len(recommender_instances) == 0:
         print("Recommenders not created")
 
@@ -21,6 +35,9 @@ def get_recommender(include_internal_records):
 
 
 def refresh_recommenders():
+    """
+    Refreshes the components of the recommenders
+    """
     for recommender in recommender_instances.values():
         refreshed_components = set()
         recommender.refresh(refreshed_components)
@@ -30,6 +47,15 @@ def create_recommender_system(
         app,
         record_based_recsys_factory=None,
         query_based_recsys_factory=None):
+    """
+    The factory method for creating the recommender instances
+
+    :param app: the flask app
+    :param record_based_recsys_factory: optional factory method for creating
+    the record-based recommender
+    :param query_based_recsys_factory: optional factory method for creating
+    the query-based recommender
+    """
     print("Creating Recommender")
 
     def r_based_recsys_factory(include_internal_records):
@@ -92,6 +118,10 @@ def create_recommender_system(
 
 
 class Recommender(Refreshable):
+    """
+    The recommender instance that consists of a record-based and a query-based
+    recommender
+    """
 
     def __init__(
             self, record_based_recsys, query_based_recsys):
@@ -104,18 +134,42 @@ class Recommender(Refreshable):
             query_based_recsys)
 
     def get_similar_queries(self, query_string, max_num_recs=10):
+        """
+        Returns a list of queries which are similar to the target query
+
+        :param query_string: the query that was entered by the user
+        """
         return self.query_based_recsys.get_similar_queries(
             query_string, max_num_recs)
 
     def recommend_search_results(self, query_string, max_num_recs=10):
+        """
+        Returns a list of records that were viewed after entering the query
+
+        :param query_string: the query that was entered by the user
+        :param max_num_recs: the maximum number of recommendations to return
+        """
         return self.query_based_recsys.recommend_search_results(
             query_string, max_num_recs)
 
     def other_users_also_used(self, record_id, max_num_recs=10):
+        """
+        Returns a list of records that were used together with the given one
+
+        :param session_id: the id of the record
+        :param max_num_recs: the maximum number of recommendations to return
+        """
         return self.record_based_recsys.most_similar_records(
             record_id, max_num_recs)
 
     def influenced_by_your_history(self, session_id, max_num_recs=10):
+        """
+        Gets a list of recommended records based on a session's history
+
+        :param session_id: the id of the session to which the records are
+        recommended
+        :param max_num_recs: the maximum number of recommendations to return
+        """
         return self.record_based_recsys.recommend(
             session_id, max_num_recs)
 

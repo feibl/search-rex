@@ -1,3 +1,14 @@
+"""
+In this module, the similarity classes of the item-based approach are defined.
+The most important classes are the CombinedRecordSimilarity, the
+CollaborativeRecordSimilarity and the ContentRecordSimilarity. The first one
+combines the record similarity values of two underlying item based similarity
+classes. The second similarity class calculates the similarity of two records
+by using a similarity metric, e.g., cosine similarity, on their preference
+vectors. Finally, ContentRecordSimilarity retrieves the imported content-based
+similarity from the database and stores in the local memory.
+"""
+
 from similarity_metrics import jaccard_sim
 from similarity_metrics import cosine_sim
 from .. import queries
@@ -15,21 +26,39 @@ class AbstractRecordSimilarity(Refreshable):
     """
 
     def get_similarity(self, from_record_id, to_record_id):
+        """
+        Computes the similarity from one record to the other
+        """
         raise NotImplementedError()
 
 
 class RecordSimilarity(AbstractRecordSimilarity):
     """
-    Computes the similarity from one record to the other
+    Computes the similarity from one record to the other by comparing their
+    preferences using a similarity metric
     """
 
     def __init__(self, data_model, similarity_metric):
+        """
+        :param data_model: the data model where the preferences are stored
+        :param similarity_metric: the metric that computes the similarity
+        between the preference vectors
+        """
         self.data_model = data_model
         self.similarity_metric = similarity_metric
         self.refresh_helper = RefreshHelper()
         self.refresh_helper.add_dependency(data_model)
 
     def get_similarity(self, from_record_id, to_record_id):
+        """
+        Computes the similarity from one record to the other by comparing their
+        preferences using a similarity metric
+        :param from_record_id: the id of the record from which the similarity
+        is directed
+        :param from_record_id: the id of the record to which the similarity
+        is directed
+        """
+
         from_preferences = self.data_model.get_preferences_for_record(
             from_record_id)
         to_preferences = self.data_model.get_preferences_for_record(
@@ -45,10 +74,17 @@ class RecordSimilarity(AbstractRecordSimilarity):
 class CombinedRecordSimilarity(AbstractRecordSimilarity):
     """
     Combines the similarity value of two similarity metrics by applying a
-    weight
+    weight on each similarities
+
+    sim = w * sim1 + (1-w) * sim2
     """
 
     def __init__(self, similarity_metric1, similarity_metric2, weight):
+        """
+        :param similarity_metric1: the first similarity metric
+        :param similarity_metric2: the second similarity metric
+        :param weight: the weight between 0 and 1 of metric 1
+        """
         assert weight >= 0 and weight <= 1
         self.similarity_metric1 = similarity_metric1
         self.similarity_metric2 = similarity_metric2
@@ -58,6 +94,15 @@ class CombinedRecordSimilarity(AbstractRecordSimilarity):
         self.refresh_helper.add_dependency(similarity_metric2)
 
     def get_similarity(self, from_record_id, to_record_id):
+        """
+        Computes the similarity from one record to the other by comparing their
+        preferences using a similarity metric
+
+        :param from_record_id: the id of the record from which the similarity
+        is directed
+        :param from_record_id: the id of the record to which the similarity
+        is directed
+        """
         sim1 = self.similarity_metric1.get_similarity(
             from_record_id, to_record_id)
         sim2 = self.similarity_metric2.get_similarity(
@@ -99,6 +144,15 @@ class InMemoryRecordSimilarity(AbstractRecordSimilarity):
         self.similarities = similarities
 
     def get_similarity(self, from_record_id, to_record_id):
+        """
+        Computes the similarity from one record to the other by comparing their
+        preferences using a similarity metric
+
+        :param from_record_id: the id of the record from which the similarity
+        is directed
+        :param from_record_id: the id of the record to which the similarity
+        is directed
+        """
         if from_record_id in self.similarities:
             if to_record_id in self.similarities[from_record_id]:
                 return self.similarities[from_record_id][to_record_id]
@@ -115,6 +169,14 @@ class AbstractPreferenceSimilarity(object):
     """
 
     def get_similarity(self, from_preferences, to_preferences):
+        """
+        Computes the similarity of the preference vectors
+
+        :param from_preferences: the preference vector of the record from which
+        the similarity is directed
+        :param to_preferences: the preference vector of the record to which
+        the similarity is directed
+        """
         raise NotImplementedError()
 
 
@@ -124,6 +186,14 @@ class JaccardSimilarity(AbstractPreferenceSimilarity):
     """
 
     def get_similarity(self, from_preferences, to_preferences):
+        """
+        Computes the jaccard similarity of the preference vectors
+
+        :param from_preferences: the preference vector of the record from which
+        the similarity is directed
+        :param to_preferences: the preference vector of the record to which
+        the similarity is directed
+        """
         return jaccard_sim(
             from_preferences.keys(), to_preferences.keys())
 
@@ -134,6 +204,14 @@ class CosineSimilarity(AbstractPreferenceSimilarity):
     """
 
     def get_similarity(self, from_preferences, to_preferences):
+        """
+        Computes the cosine similarity of the preference vectors
+
+        :param from_preferences: the preference vector of the record from which
+        the similarity is directed
+        :param to_preferences: the preference vector of the record to which
+        the similarity is directed
+        """
         return cosine_sim(
             {key: pref.value for key, pref in from_preferences.iteritems()},
             {key: pref.value for key, pref in to_preferences.iteritems()},
@@ -142,14 +220,23 @@ class CosineSimilarity(AbstractPreferenceSimilarity):
 
 class SignificanceWeighting(AbstractPreferenceSimilarity):
     """
-    Penalises the similarity when only a small overlap of common preferences
-    exist
+    Penalises the similarity of the underlying similarity_metric if it is
+    based on few overlaps in terms of the preference vectors
     """
     def __init__(self, similarity_metric, min_overlap):
         self.similarity_metric = similarity_metric
         self.min_overlap = min_overlap
 
     def get_similarity(self, from_preferences, to_preferences):
+        """
+        Penalises the similarity of the underlying similarity_metric if it is
+        based on few overlaps in terms of the preference vectors
+
+        :param from_preferences: the preference vector of the record from which
+        the similarity is directed
+        :param to_preferences: the preference vector of the record to which
+        the similarity is directed
+        """
         similarity = self.similarity_metric.get_similarity(
             from_preferences, to_preferences)
         overlap = len(
@@ -171,7 +258,7 @@ def partition_preferences_by_time(
 
 class TimeDecaySimilarity(AbstractPreferenceSimilarity):
     """
-    Implements a decreasing weight that penalises older interactions more
+    Implements a decreasing weight that penalises older interactions
     """
     def __init__(
             self, similarity_metric,
@@ -192,6 +279,14 @@ class TimeDecaySimilarity(AbstractPreferenceSimilarity):
         self.max_age = max_age
 
     def get_similarity(self, from_preferences, to_preferences):
+        """
+        Implements a decreasing weight that penalises older interactions
+
+        :param from_preferences: the preference vector of the record from which
+        the similarity is directed
+        :param to_preferences: the preference vector of the record to which
+        the similarity is directed
+        """
         if len(from_preferences) == 0 and len(to_preferences) == 0:
             return float('NaN')
 

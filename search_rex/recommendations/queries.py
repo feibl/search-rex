@@ -1,5 +1,8 @@
 """
-Implements database queries that are used by the recommender system
+In this module, functions that execute rather complex database queries are
+provided. These queries are mainly called by the data models of the two
+recommendation algorithms in order to access the data that they require, e.g.,
+the session-record matrix as well as the hit-matrix.
 """
 
 from ..models import Record
@@ -21,7 +24,13 @@ def get_actions_for_queries(
         include_internal_records, query_strings=None,
         max_age=None):
     """
-    Retrieves the hit rows of the given queries
+    Retrieves the actions of all queries
+
+    :param include_internal_records: indicates if actions on internal records
+    should be omitted
+    :param query_strings: restricts the query to return only the actions of
+    the provided queries
+    :param max_age: the maximum age of the actions
     """
     session = db.session
 
@@ -59,7 +68,9 @@ def get_actions_for_queries(
 
 
 def get_queries():
-    '''Gets an iterator over all the committed queries'''
+    """
+    Gets an iterator over all the committed queries
+    """
     session = db.session
 
     query = (
@@ -71,7 +82,9 @@ def get_queries():
 
 
 def get_records(include_internal_records):
-    '''Gets an iterator over all the records'''
+    """
+    Gets an iterator over all the records
+    """
     session = db.session
 
     query = session.query(Record.record_id).filter(Record.active == True)
@@ -85,6 +98,9 @@ def get_records(include_internal_records):
 def get_actions_of_session(session_id):
     """
     Retrieves the actions that have been recorded in the session
+
+    :param session_id: the id of the session from which the actions are to be
+    retrieved
     """
     session = db.session
 
@@ -101,6 +117,10 @@ def get_actions_of_session(session_id):
 def get_actions_on_record(record_id, max_age=None):
     """
     Retrieves the actions that have been performed on the record
+
+    :param record_id: the id of the record of which the actions should be
+    retrieved
+    :param max_age: the maximum age of the action
     """
     session = db.session
 
@@ -118,6 +138,10 @@ def get_actions_on_records(include_internal_records, max_age=None):
     """
     Retrieves the Records and the list of actions that have been performed
     on them
+
+    :param include_internal_records: indicates if actions on internal records
+    should be omitted
+    :param max_age: the maximum age of the actions
     """
     session = db.session
 
@@ -143,6 +167,12 @@ def get_actions_on_records(include_internal_records, max_age=None):
 
 
 def get_similarities(include_internal_records):
+    """
+    Retrieves all the similarities that has been imported
+
+    :param include_internal_records: indicates if similarities of internal
+    records should be omitted
+    """
     session = db.session
 
     from_alias = aliased(Record)

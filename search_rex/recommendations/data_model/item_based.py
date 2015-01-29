@@ -1,3 +1,14 @@
+"""
+In this module, the similarity classes of the item-based approach are defined.
+The most important classes are the CombinedRecordSimilarity, the
+CollaborativeRecordSimilarity and the ContentRecordSimilarity. The first one
+combines the record similarity values of two underlying item based similarity
+classes. The second similarity class calculates the similarity of two records
+by using a similarity metric, e.g., cosine similarity, on their preference
+vectors. Finally, ContentRecordSimilarity retrieves the imported content-based
+similarity from the database and stores in the local memory.
+"""
+
 from .. import queries
 from search_rex.models import ActionType
 from ..refreshable import Refreshable
@@ -5,15 +16,22 @@ from ..refreshable import RefreshHelper
 
 
 class Preference(object):
+    """
+    An entry of the session-record matrix consisting of a value and a
+    preference time
+    """
     def __init__(self, value, preference_time):
+        """
+        :param value: the value of the preference
+        :param preference_time: the time at which the preference was committed
+        """
         self.value = value
         self.preference_time = preference_time
 
 
 class AbstractRecordDataModel(Refreshable):
     """
-    A wrapper around a concrete DataModel whose methods do not include
-    the action_type and the include_internal_records as parameters
+    The repository for the session-record matrix
     """
 
     def get_records(self):
@@ -43,15 +61,20 @@ class AbstractRecordDataModel(Refreshable):
 
 class PersistentRecordDataModel(AbstractRecordDataModel):
     """
-    A wrapper around a concrete DataModel whose methods do not include
-    the action_type and the include_internal_records as parameters
-
-    The action_type and the include_internal_records are passed in the ctor
+    This repository works directly on the database. It includes the variable
+    include_internal_records that indicates if this repository includes
+    internal records
     """
 
     def __init__(
             self, include_internal_records, copy_action_weight=2.0,
             view_action_weight=1.0):
+        """
+        :param include_internal_records: indicates if this repository includes
+        internal records
+        :param copy_action_weight: the preference value of a copy action
+        :param view_action_weight: the preference value of a view action
+        """
         self.include_internal_records = include_internal_records
         self.view_action_weight = view_action_weight
         self.copy_action_weight = copy_action_weight
@@ -121,6 +144,10 @@ class PersistentRecordDataModel(AbstractRecordDataModel):
 
 
 class InMemoryRecordDataModel(AbstractRecordDataModel):
+    """
+    This data model retrieves the data from an underlying data model and stores
+    the data in a dictionary. Calling refresh, reloads the data
+    """
 
     def __init__(self, data_model):
         self.data_model = data_model

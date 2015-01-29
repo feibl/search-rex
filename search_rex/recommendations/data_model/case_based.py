@@ -1,3 +1,17 @@
+"""
+In this module, the implementations of the data model for the case-based
+recommender system are provided. The data model is the repository for accessing
+the data that is needed in order to generate recommendations. In the case of
+this work, the data model for the case-based approach consists of the
+hit-matrix in whose entries represent the number of times users of the
+HSR-Geodatenkompass have clicked on a particular record after having entered a
+specific query. The most important classes in this module are the
+PersistentQueryDataModel and the InMemoryQueryDataModel. The first class works
+directly on the database in order to retrieve the entries of the matrix. The
+second class retrieves the data from an underlying data model and stores it in
+the local memory.
+"""
+
 from .. import queries
 from ..refreshable import Refreshable
 from ..refreshable import RefreshHelper
@@ -8,6 +22,10 @@ from search_rex.util.date_util import utcnow
 
 
 class Hit(object):
+    """
+    An entry of the Hit-Matrix consisting of a value, the number of copies as
+    well as views and finally the date of the last action.
+    """
 
     def __init__(self, value, last_interaction):
         self.value = value
@@ -29,6 +47,9 @@ class AbstractQueryDataModel(Refreshable):
     def get_hits_for_queries(self, query_strings):
         """
         Retrieves the hit rows of the given queries
+
+        :param query_strings: the queries for which the hit rows should be
+        returned
         """
         raise NotImplementedError()
 
@@ -45,6 +66,14 @@ class PersistentQueryDataModel(AbstractQueryDataModel):
             self, include_internal_records, copy_action_weight=2.0,
             view_action_weight=1.0, perform_time_decay=True,
             time_interval=timedelta(days=1), half_life=50, max_age=300):
+        """
+        :param include_internal_records: indicates if internal records should
+        be included or not
+        :param copy_action_weight: the weight of a copy action
+        :param view_action_weight: the weight of a view action
+        :param perform_time_decay: indicates if the weight of older actions
+        should be decreased
+        """
         self.include_internal_records = include_internal_records
         self.view_action_weight = view_action_weight
         self.copy_action_weight = copy_action_weight
@@ -92,6 +121,9 @@ class PersistentQueryDataModel(AbstractQueryDataModel):
     def get_hit_rows_for_queries(self, target_queries):
         """
         Retrieves the hit rows of the given queries
+
+        :param query_strings: the queries for which the hit rows should be
+        returned
         """
         for query, actions in queries.get_actions_for_queries(
                 self.include_internal_records, target_queries):
@@ -100,7 +132,7 @@ class PersistentQueryDataModel(AbstractQueryDataModel):
 
     def get_hit_rows(self):
         """
-        Retrieves the hit rows of the given queries
+        Retrieves the complete hit matrix consisting of all hit rows
         """
         for query, actions in queries.get_actions_for_queries(
                 self.include_internal_records):
@@ -117,6 +149,10 @@ class PersistentQueryDataModel(AbstractQueryDataModel):
 
 
 class InMemoryQueryDataModel(AbstractQueryDataModel):
+    """
+    This data model retrieves the data from an underlying data model and stores
+    the data in a dictionary. Calling refresh, reloads the data
+    """
 
     def __init__(self, data_model):
         self.data_model = data_model
@@ -158,7 +194,7 @@ class InMemoryQueryDataModel(AbstractQueryDataModel):
 
     def refresh(self, refreshed_components):
         """
-        No refresh needed as the class works directly on the database
+        Reloads the data from the data model after its refreshment
         """
         self.refresh_helper.refresh(refreshed_components)
         refreshed_components.add(self)

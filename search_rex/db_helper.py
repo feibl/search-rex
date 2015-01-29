@@ -1,3 +1,8 @@
+"""
+In this module functions are defined that simplify the interaction with the
+database
+"""
+
 from sqlalchemy.sql import ClauseElement
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.exc import IntegrityError
@@ -6,6 +11,10 @@ from sqlalchemy.exc import IntegrityError
 def get_one_or_create(
         session, model, create_method=None,
         create_kwargs=None, **kwargs):
+    """
+    Gets a specific data base object. If it is not available, it will be
+    created
+    """
     try:
         return session.query(model).filter_by(**kwargs).one(), True
     except NoResultFound:

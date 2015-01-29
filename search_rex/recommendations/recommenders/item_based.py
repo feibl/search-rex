@@ -1,3 +1,9 @@
+"""
+In this module, the implementation of the item-based recommender system is
+defined. The main class is the RecordBasedRecommender which is able to
+recommend geodata records by learning the users' interests.
+"""
+
 from collections import defaultdict
 from ..refreshable import Refreshable
 from ..refreshable import RefreshHelper
@@ -10,25 +16,35 @@ logger = logging.getLogger(__name__)
 
 class AbstractRecordBasedRecommender(Refreshable):
     """
-    An item-based recommender system for recommending records to the user
+    An item-based recommender system for recommending records to the users by
+    incorporating their history of views and copies
     """
 
     def recommend(self, session_id, max_num_recs=10):
         """
-        Recommends records based on the recent actions in the session
+        Gets a list of recommended records based on a session's history
+
+        :param session_id: the id of the session to which the records are
+        recommended
+        :param max_num_recs: the maximum number of recommendations to return
         """
+
         raise NotImplementedError()
 
     def most_similar_records(self, record_id, max_num_recs=10):
         """
-        Retrieves the records most similar to the given one
+        Returns a list of records that were used together with the given one
+
+        :param session_id: the id of the record
+        :param max_num_recs: the maximum number of recommendations to return
         """
         raise NotImplementedError()
 
 
 class RecordBasedRecommender(AbstractRecordBasedRecommender):
     """
-    An item-based recommender system for recommending records to the user
+    An item-based recommender system for recommending records to the users by
+    incorporating their history of views and copies
     """
 
     def __init__(self, data_model, record_nhood, record_sim):
@@ -42,7 +58,11 @@ class RecordBasedRecommender(AbstractRecordBasedRecommender):
 
     def recommend(self, session_id, max_num_recs=10):
         """
-        Recommends records based on the recent actions in the session
+        Gets a list of recommended records based on a session's history
+
+        :param session_id: the id of the session to which the records are
+        recommended
+        :param max_num_recs: the maximum number of recommendations to return
         """
         candidates = defaultdict(float)
         preferences = self.data_model.get_preferences_of_session(session_id)
@@ -66,7 +86,10 @@ class RecordBasedRecommender(AbstractRecordBasedRecommender):
 
     def most_similar_records(self, record_id, max_num_recs=10):
         """
-        Retrieves records that are most similar to the given record
+        Returns a list of records that were used together with the given one
+
+        :param session_id: the id of the record
+        :param max_num_recs: the maximum number of recommendations to return
         """
         candidates = []
         for nbour in self.record_nhood.get_neighbours(record_id):

@@ -1,3 +1,10 @@
+"""
+In this module, the classes for forming the records' neighbourhoods are
+implemented. The main class in this module is the InMemoryRecordNeighbourhood.
+This class calculates the neighbourhood of each record and stores it in the
+local memory.
+"""
+
 from ..similarity.item_based import AbstractRecordSimilarity
 from ..refreshable import Refreshable
 from ..refreshable import RefreshHelper
@@ -19,6 +26,12 @@ class KNearestRecordNeighbourhood(AbstractRecordNeighbourhood):
     """
 
     def __init__(self, k, data_model, record_sim):
+        """
+        :param k: the number of records that belong to the neighbourhood of a
+        target record
+        :param data_model: the data model from which the records are retrieved
+        :param record_sim: the object for calculating the record similarities
+        """
         self.k = k
         self.data_model = data_model
         self.record_sim = record_sim
@@ -27,6 +40,9 @@ class KNearestRecordNeighbourhood(AbstractRecordNeighbourhood):
         self.refresh_helper.add_dependency(record_sim)
 
     def get_neighbours(self, record_id):
+        """
+        Retrieves k records that are most similar to the given record
+        """
         candidates = {}
         for other_record in self.data_model.get_records():
             similarity = self.record_sim.get_similarity(
@@ -60,6 +76,14 @@ class InMemoryRecordNeighbourhood(
             self, data_model, record_sim, max_num_nbours=100,
             nhood_factory=lambda dm, sim, num_nh:
             KNearestRecordNeighbourhood(num_nh, dm, sim)):
+        """
+        :param data_model: the data model from which the records are retrieved
+        :param record_sim: the object for calculating the record similarities
+        :param max_sims_per_record: the maximum numbers of similarities to be
+        stored per record
+        :param nhood_factory: factory method for creating the neighbourhood
+        object
+        """
         self.data_model = data_model
         self.record_sim = record_sim
         self.nhood_factory = nhood_factory

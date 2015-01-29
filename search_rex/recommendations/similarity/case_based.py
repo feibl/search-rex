@@ -1,10 +1,19 @@
+"""
+The case-based similarity module defines the classes that calculate the
+similarity of two queries. The most important class is the NGramQuerySimilarity
+which computes the Jaccard coefficient similarity over the N-grams of the
+queries.
+"""
+
 from similarity_metrics import jaccard_sim
 from ..refreshable import Refreshable
 
 
 def shingle(doc_string, k):
-    '''Extracts a set shingles from the input string. Shingles are contiguous
-    subsequences of tokens'''
+    """
+    Extracts a set shingles from the input string. Shingles are contiguous
+    subsequences of tokens
+    """
     n_chars = len(doc_string)
 
     if n_chars < k:
@@ -19,16 +28,23 @@ def shingle(doc_string, k):
 
 
 class AbstractQuerySimilarity(Refreshable):
-    '''Computes the similarity between two queries'''
+    """
+    Computes the similarity between two queries
+    """
 
     def get_similarity(self, from_query_string, to_query_string):
         raise NotImplementedError()
 
 
 class StringJaccardSimilarity(AbstractQuerySimilarity):
-    '''Computes the jaccard similarity on string basis using shingles'''
+    """
+    Computes the jaccard similarity of the two queries' shingles
+    """
 
     def __init__(self, k_shingles):
+        """
+        :param k_shingles: the size of the shingles
+        """
         self.k_shingles = k_shingles
 
     def get_similarity(self, from_query_string, to_query_string):

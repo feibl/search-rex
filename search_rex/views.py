@@ -1,3 +1,11 @@
+"""
+In this module, the views of the recommender API are defined. According to
+their definition, views are functions that take a web request and return a
+web response. Therefore, they are the main entry points of the recommender
+system. Moreover, they describe what the system is capable of and how the
+system is accessed.
+"""
+
 from core import InvalidUsage
 from flask import request
 from flask import jsonify
@@ -21,6 +29,10 @@ rec_api = Blueprint('rec_api', __name__)
 
 
 def api_key_required(view_function):
+    """
+    Decorator for view functions that checks if the correct API key is
+    transferred
+    """
     @wraps(view_function)
     def decorated_function(*args, **kwargs):
         if 'api_key' in request.args and\
@@ -37,6 +49,12 @@ def api_key_required(view_function):
 
 def parse_arg(
         request, arg_name, default_value=None, type=None, required=False):
+    """
+    Function for parsing arguments
+
+    Arguments can be defined as required. In this case a InvalidUsage exception
+    is thrown
+    """
     try:
         arg = request.args[arg_name]
         if type is not None:
@@ -58,6 +76,9 @@ def parse_arg(
 
 
 def parse_bool(string):
+    """
+    Parsing function for bool values
+    """
     return string.lower() == 'true'
 
 
@@ -65,7 +86,13 @@ def parse_bool(string):
 @api_key_required
 def view():
     """
-    Reports that a view action occurred during a session
+    Stores a view action that a user has performed on a record
+
+    :param record_id: the id of the record
+    :param is_internal_record: boolean indicating if record is internal
+    :param session_id: the id of the session in which the action occurred
+    :param timestamp: the timestamp of the action
+    :param query_string: the query that has led to the action
     """
     is_internal_record = parse_arg(
         request, 'is_internal_record', required=True, type=parse_bool)
@@ -90,7 +117,13 @@ def view():
 @api_key_required
 def copy():
     """
-    Reports that a copy action occurred during a session
+    Stores a copy action that a user has performed on a record
+
+    :param record_id: the id of the record
+    :param is_internal_record: boolean indicating if record is internal
+    :param session_id: the id of the session in which the action occurred
+    :param timestamp: the timestamp of the action
+    :param query_string: the query that has led to the action
     """
 
     is_internal_record = parse_arg(
@@ -117,6 +150,12 @@ def copy():
 def influenced_by_your_history():
     """
     Gets a list of recommended records based on a session's history
+
+    :param session_id: the id of the session to which the records are
+    recommended
+    :param max_num_recs: the maximum number of recommendations to return
+    :param include_internal_records: indicates if internal records should be
+    recommended
     """
     include_internal_records = parse_arg(
         request, 'include_internal_records', required=True, type=parse_bool)
@@ -143,6 +182,11 @@ def influenced_by_your_history():
 def other_users_also_used():
     """
     Returns a list of records that were used together with the given one
+
+    :param session_id: the id of the record
+    :param max_num_recs: the maximum number of recommendations to return
+    :param include_internal_records: indicates if internal records should be
+    recommended
     """
 
     include_internal_records = parse_arg(
@@ -169,6 +213,11 @@ def other_users_also_used():
 def recommended_search_results():
     """
     Returns a list of records that were viewed after entering the query
+
+    :param query_string: the query that was entered by the user
+    :param max_num_recs: the maximum number of recommendations to return
+    :param include_internal_records: indicates if internal records should be
+    recommended
     """
 
     include_internal_records = parse_arg(
@@ -193,6 +242,8 @@ def recommended_search_results():
 def similar_queries():
     """
     Returns a list of queries which are similar to the target query
+
+    :param query_string: the query that was entered by the user
     """
 
     query_string = parse_arg(request, 'query_string', required=True)
@@ -213,6 +264,9 @@ def similar_queries():
 def set_record_active():
     """
     Sets a record active or inactive. Inactive records will not be recommended.
+
+    :param record_id: the id of the record to be activated/deactivated
+    :param active: boolean indicating if setting active or inactive
     """
 
     record_id = parse_arg(request, 'record_id', required=True)
@@ -226,7 +280,19 @@ def set_record_active():
 @api_key_required
 def import_record_similarity():
     """
-    Imports a similarity value of two records
+    Imports a similarity value from one record to the other
+
+    Only as many similarities as specified in max_sims_per_record are stored
+    per record. If, by inclusion of the similarity, this value is exceeded,
+    only the top similarities are preserved.
+
+    :param from_record_id: the id of the record from which the similarity is
+    directed
+    :param from_is_internal: boolean indicating if from record is internal
+    :param to_record_id: the id of the record to which the similarity is
+    directed
+    :param to_is_internal: boolean indicating if the to record is internal
+    :param similarity: the similarity of the two records
     """
     from_record_id = parse_arg(request, 'from_record_id', required=True)
     to_record_id = parse_arg(request, 'to_record_id', required=True)

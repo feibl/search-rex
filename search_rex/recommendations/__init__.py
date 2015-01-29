@@ -10,18 +10,18 @@ import neighbourhood.item_based as item_based_nhood
 import neighbourhood.case_based as query_based_nhood
 
 
-recommenders = {}
+recommender_instances = {}
 
 
 def get_recommender(include_internal_records):
-    if len(recommenders) == 0:
+    if len(recommender_instances) == 0:
         print("Recommenders not created")
 
-    return recommenders[include_internal_records]
+    return recommender_instances[include_internal_records]
 
 
 def refresh_recommenders():
-    for recommender in recommenders.values():
+    for recommender in recommender_instances.values():
         refreshed_components = set()
         recommender.refresh(refreshed_components)
 
@@ -40,6 +40,7 @@ def create_recommender_system(
         content_sim = item_based_sim.InMemoryRecordSimilarity(
             include_internal_records)
         sim_metric = item_based_sim.CosineSimilarity()
+        sim_metric = item_based_sim.TimeDecaySimilarity(sim_metric)
         collaborative_sim = item_based_sim.RecordSimilarity(
             in_mem_dm, sim_metric)
         combined_sim = item_based_sim.CombinedRecordSimilarity(
@@ -59,7 +60,7 @@ def create_recommender_system(
         sim = query_based_sim.StringJaccardSimilarity(k_shingles=3)
         nhood = query_based_nhood.ThresholdQueryNeighbourhood(
             in_mem_dm, sim, sim_threshold=0.25)
-        scorer = query_based_rec.WeightedScorer(
+        scorer = query_based_rec.WeightedSumScorer(
             query_based_rec.LogFrequency(base=2))
 
         return query_based_rec.QueryBasedRecommender(
@@ -86,7 +87,7 @@ def create_recommender_system(
                 query_based_recsys=q_based_recsys,
                 record_based_recsys=r_based_recsys)
 
-            recommenders[include_internal_records] =\
+            recommender_instances[include_internal_records] =\
                 rec_service
 
 

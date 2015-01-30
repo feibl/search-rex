@@ -24,7 +24,7 @@ $ mkvirtualenv search_rex
 $ pip install -r requirements.txt
 ```
 3. Set the configuration values for within the config.py file:
-```
+```python
 class Config(object):
     SQLALCHEMY_DATABASE_URI =\
         'postgresql://postgres:password@localhost/search_rex'
@@ -125,7 +125,6 @@ Gets a list of recommended records based on a session's history of viewed and co
 }
 ```
 
-\pagebreak
 ## Other Users Also Used
 Given a record, the system returns a list of records that were viewed and copied by users who also have interacted with the record. The returned records are sorted by their relevance.
 
@@ -186,7 +185,7 @@ Given a query, the system returns a list of records that were found relevant by 
 }
 ```
 
-## Similar Queries}
+## Similar Queries
 Given a query, the system returns a list of similar queries that other users have entered. The returned queries are sorted by their relevance.
 *Sample Call:*
 ```

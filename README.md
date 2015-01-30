@@ -18,7 +18,7 @@ After having installed the above listed tools, the following steps are to be per
 $ git clone git@github.com:feibl/search-rex.git
 $ cd search_rex
 ```
-2.Create and initialize virtualenv for the project:
+2. Create and initialize virtualenv for the project:
 ```
 $ mkvirtualenv search_rex
 $ pip install -r requirements.txt

@@ -13,17 +13,17 @@ In order to setup the application the following tools are required:
 
 After having installed the above listed tools, the following steps are to be performed in order to setup a running instance of the application:
 
-1. Clone the project:
+#### 1. Clone the project:
 ```
 $ git clone git@github.com:feibl/search-rex.git
 $ cd search_rex
 ```
-2. Create and initialize virtualenv for the project:
+#### 2. Create and initialize virtualenv for the project:
 ```
 $ mkvirtualenv search_rex
 $ pip install -r requirements.txt
 ```
-3. Set the configuration values for within the config.py file:
+#### 3. Set the configuration values for within the config.py file:
 ```python
 class Config(object):
     SQLALCHEMY_DATABASE_URI =\
@@ -32,15 +32,15 @@ class Config(object):
     CELERY_BROKER_URL =\
         'sqla+postgresql://postgres:password@localhost/search_rex'
 ```
-4. Upgrade the database:
+#### 4. Upgrade the database:
 ```
 $ python manage.py db upgrade
 ```
-5. In a console, run the recommender application application:
+#### 5. In a console, run the recommender application application:
 ```
 $ python run.py
 ```
-6. In another console, run the Celery application:
+#### 6. In another console, run the Celery application:
 ```
 $ celery -A search_rex.tasks worker --loglevel=info --beat
 ```

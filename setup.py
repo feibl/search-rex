@@ -10,5 +10,6 @@ setup(
     install_requires=[
         'Flask',
         'SQLAlchemy',
+        'Celery',
     ]
 )

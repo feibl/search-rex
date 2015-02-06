@@ -11,5 +11,6 @@ setup(
         'Flask',
         'SQLAlchemy',
         'Celery',
+        'Flask-RESTful',
     ]
 )

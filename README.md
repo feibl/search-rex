@@ -23,7 +23,7 @@ $ cd search_rex
 $ mkvirtualenv search_rex
 $ pip install -r requirements.txt
 ```
-#### 3. Set the configuration values for within the config.py file:
+#### 3. Set the configuration values for within the recsys_config.py file:
 ```python
 class Config(object):
     SQLALCHEMY_DATABASE_URI =\

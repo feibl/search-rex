@@ -16,7 +16,7 @@ class BaseTestCase(TestCase):
         Creates the app from the config-class TestConfiguration
         '''
         app = Flask(__name__)
-        app.config.from_object('config.TestingConfig')
+        app.config.from_object('recsys_config.TestingConfig')
         db.init_app(app)
         return app
 

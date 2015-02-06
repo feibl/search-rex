@@ -15,7 +15,7 @@ class BaseTestCase(TestCase):
         '''
         Creates the app from the config-class TestConfiguration
         '''
-        app = create_app('config.TestingConfig')
+        app = create_app('recsys_config.TestingConfig')
         return app
 
     def setUp(self):

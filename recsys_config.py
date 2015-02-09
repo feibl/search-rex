@@ -28,4 +28,4 @@ class DevelopmentConfig(Config):
 class TestingConfig(Config):
     TESTING = True
     SQLALCHEMY_DATABASE_URI =\
-        'sqlite:///' + tempfile.tempdir + '/search_rex.db'
+        'sqlite:///' + tempfile.gettempdir() + '/search_rex.db'

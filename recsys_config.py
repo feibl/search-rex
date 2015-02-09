@@ -1,4 +1,5 @@
 import os
+import tempfile
 
 
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -27,4 +28,4 @@ class DevelopmentConfig(Config):
 class TestingConfig(Config):
     TESTING = True
     SQLALCHEMY_DATABASE_URI =\
-        'sqlite:////tmp/search_rex.db'
+        'sqlite:///' + tempfile.tempdir + '/search_rex.db'

@@ -27,11 +27,10 @@ decorator==3.4.0
 flake8==2.2.5
 itsdangerous==0.24
 jedi==0.8.1-final0
-kombu==3.0.24
+kombu==3.0.30
 mccabe==0.2.1
 mock==1.0.1
 pep8==1.5.7
-psycopg2==2.5.2
 py==1.4.26
 pyflakes==0.8.1
 pyparsing==2.0.2
